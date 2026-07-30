@@ -527,12 +527,11 @@ body.dirty .dirty-dot{display:block}
             <th style="width:70px">数量</th>
             <th style="width:80px">往復</th>
             <th style="width:104px">金額(円)</th>
-            <th style="width:108px">精算</th>
-            <th style="width:110px">備考</th>
+            <th style="width:130px">備考</th>
             <th class="rowdel"></th>
           </tr></thead>
           <tbody></tbody>
-          <tfoot><tr class="total-row"><td colspan="11" id="fare-total"></td></tr></tfoot>
+          <tfoot><tr class="total-row"><td colspan="10" id="fare-total"></td></tr></tfoot>
         </table>
       </div>
       <div class="tbl-foot">
@@ -775,7 +774,6 @@ const ROUTE_KINDS = ["往路", "復路", "現場間", "その他"];
 const MEANS = ["社用車", "自家用車", "電車", "バス", "タクシー", "徒歩", "その他"];
 const FARE_KINDS = ["電車", "バス", "タクシー", "高速道路", "駐車場", "燃料", "その他"];
 const TRIP_TYPES = ["片道", "往復"];
-const PAYERS = ["本人立替", "会社負担", "元請支給"];
 const DEFAULT_SIGN_ROLES = ["作業責任者", "元請確認"];
 
 const $  = (sel, root) => (root || document).querySelector(sel);
@@ -1142,7 +1140,6 @@ const ROW_DEFS = {
     { key: "qty",    label: "数量",       type: "number", cls: "num", step: "1" },
     { key: "trip",   label: "往復",       type: "select", options: TRIP_TYPES },
     { key: "amount", label: "金額(円)",   type: "calc", cls: "num" },
-    { key: "payer",  label: "精算",       type: "select", options: PAYERS },
     { key: "note",   label: "備考",       type: "text", wide: true },
   ],
   materials: [
@@ -1269,13 +1266,9 @@ function fareAmount(f) {
 }
 
 function travelSummary(routes, fares) {
-  const s = { km: 0, fare: 0, advance: 0 };
+  const s = { km: 0, fare: 0 };
   (routes || []).forEach((r) => { s.km += num(r.km); });
-  (fares || []).forEach((f) => {
-    const a = fareAmount(f);
-    s.fare += a;
-    if (f.payer === "本人立替") s.advance += a;
-  });
+  (fares || []).forEach((f) => { s.fare += fareAmount(f); });
   return s;
 }
 
@@ -1320,11 +1313,8 @@ function recalc() {
   refreshFareAmounts();
   const t = travelSummary(readRows("routes"), readRows("fares"));
   $("#chips-routes").innerHTML = `<span class="chip">移動距離<b>${fmtNink(t.km)}</b>km</span>`;
-  $("#chips-fares").innerHTML =
-    `<span class="chip">交通費<b>${yen(t.fare)}</b>円</span>` +
-    `<span class="chip">うち本人立替<b>${yen(t.advance)}</b>円</span>`;
-  $("#fare-total").textContent =
-    `交通費合計 ${yen(t.fare)} 円（うち本人立替 ${yen(t.advance)} 円） / 移動距離 ${fmtNink(t.km)} km`;
+  $("#chips-fares").innerHTML = `<span class="chip">交通費<b>${yen(t.fare)}</b>円</span>`;
+  $("#fare-total").textContent = `交通費合計 ${yen(t.fare)} 円 / 移動距離 ${fmtNink(t.km)} km`;
 
   renderAlerts();
 }
@@ -1372,8 +1362,6 @@ function validate(r) {
     warns.push("災害・事故が「" + r.accident + "」ですが、発生内容が未記入です。");
   if (r.tasks.some((t) => num(t.progress) > 100)) warns.push("進捗率が 100% を超えている行があります。");
   r.fares.forEach((f, i) => {
-    if (f.payer === "本人立替" && !f.target)
-      warns.push(`交通費 ${i + 1} 行目：精算が「本人立替」ですが対象者が未記入です。誰に返すか分かりません。`);
     if (fareAmount(f) === 0 && f.detail)
       warns.push(`交通費 ${i + 1} 行目（${f.detail}）の金額が 0 円です。単価の入力漏れの可能性があります。`);
   });
@@ -1807,13 +1795,13 @@ function exportWorkerCSV() {
 
 function exportFareCSV() {
   const rows = [["作業日", "日報No", "工事番号", "工事名", "元請/発注者",
-    "種別", "内容・区間", "対象者", "単価(円)", "数量", "往復", "金額(円)", "精算", "備考"]];
+    "種別", "内容・区間", "対象者", "単価(円)", "数量", "往復", "金額(円)", "備考"]];
   filteredReports().forEach((r) => {
     (r.fares || []).forEach((f) => {
       const amt = fareAmount(f);
       if (!f.detail && !amt) return;
       rows.push([r.date, r.reportNo, r.projectNo, r.projectName, r.client,
-        f.kind, f.detail, f.target, Math.round(num(f.unit)), f.qty, f.trip, amt, f.payer, f.note]);
+        f.kind, f.detail, f.target, Math.round(num(f.unit)), f.qty, f.trip, amt, f.note]);
     });
   });
   if (rows.length === 1) { toast("出力対象の交通費がありません"); return; }
@@ -1825,7 +1813,7 @@ function exportReportCSV() {
   const rows = [["作業日", "日報No", "工事番号", "工事名", "元請/発注者", "現場所在地", "作業箇所",
     "天候(午前)", "天候(午後)", "開始", "終了", "休憩(分)", "実働", "所定終了", "残業時間(h)", "残業理由", "人数",
     "常用人工", "請負人工", "合計人工", "作業員残業計(h)",
-    "移動距離計(km)", "交通費計(円)", "本人立替(円)",
+    "移動距離計(km)", "交通費計(円)",
     "作業内容", "災害・事故", "特記事項", "翌日予定", "署名済/欄数"]];
   filteredReports().forEach((r) => {
     const s = ninkSummary(r.workers);
@@ -1835,7 +1823,7 @@ function exportReportCSV() {
       r.weatherAm, r.weatherPm, r.workStart, r.workEnd, r.breakMin, r.workHours,
       r.schedEnd, r.overtimeH, r.overtimeReason, s.count,
       fmtNink(s.常用), fmtNink(s.請負), fmtNink(s.total), fmtNink(s.ot),
-      fmtNink(t.km), t.fare, t.advance,
+      fmtNink(t.km), t.fare,
       (r.tasks || []).map((t) => t.content).filter(Boolean).join(" / "),
       r.accident + (r.accidentDetail ? "：" + r.accidentDetail : ""),
       r.remarks, r.nextPlan, `${sg.filter((x) => x.dataUrl).length}/${sg.length}`]);
@@ -1928,16 +1916,14 @@ function renderPrint(r) {
     </table>` : ""}
     ${fares.length ? `
     <table>
-      <colgroup><col style="width:56px"><col><col style="width:14%"><col style="width:56px"><col style="width:34px"><col style="width:38px"><col style="width:64px"><col style="width:62px"></colgroup>
-      <tr><th>種別</th><th>内容・区間</th><th>対象者</th><th>単価</th><th>数</th><th>往復</th><th>金額</th><th>精算</th></tr>
+      <colgroup><col style="width:56px"><col><col style="width:16%"><col style="width:60px"><col style="width:36px"><col style="width:40px"><col style="width:70px"></colgroup>
+      <tr><th>種別</th><th>内容・区間</th><th>対象者</th><th>単価</th><th>数</th><th>往復</th><th>金額</th></tr>
       ${fares.map((f) => `<tr>
         <td class="ctr">${cell(f.kind)}</td><td>${cell(f.detail)}</td><td>${cell(f.target)}</td>
         <td class="num">${f.unit ? yen(num(f.unit)) : ""}</td><td class="num">${cell(f.qty)}</td>
-        <td class="ctr">${cell(f.trip)}</td><td class="num">${yen(fareAmount(f))}</td>
-        <td class="ctr">${cell(f.payer)}</td></tr>`).join("")}
+        <td class="ctr">${cell(f.trip)}</td><td class="num">${yen(fareAmount(f))}</td></tr>`).join("")}
       <tr><td colspan="6" style="text-align:right;font-weight:700">交通費計</td>
-          <td class="num" style="font-weight:700">${yen(t.fare)}</td>
-          <td class="ctr">立替 ${yen(t.advance)}</td></tr>
+          <td class="num" style="font-weight:700">${yen(t.fare)}</td></tr>
     </table>` : ""}` : "";
 
   const machineTbl = machines.length ? `
