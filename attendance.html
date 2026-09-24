@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<title>出面表</title>
+
+<!-- ホーム画面に追加してアプリとして開くための宣言。web/ に置いたときだけ効く -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1a56a8">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="出面表">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+
+<style>
+/* 配色は作業日報アプリと同じトークンで揃える。--paper / --ink は印刷面（常に紙の白）で使う */
+:root,:root[data-theme="light"]{
+  --bg:#f2f4f7; --panel:#ffffff; --panel-2:#eef1f6; --field-bg:#ffffff; --row-alt:#fafbfd;
+  --line:#d3d8e0; --line-strong:#9aa3b0;
+  --text:#1b2330; --muted:#5f6b7d;
+  --accent:#1a56a8; --accent-weak:#e8f0fb;
+  --appbar-bg:#1a56a8; --appbar-fg:#ffffff;
+  --danger:#b3261e; --danger-bg:#fdeceb; --danger-line:#e3b6b3; --err-text:#7d1c16;
+  --ok:#1c6b3c; --ok-bg:#e7f3eb; --ok-line:#b6d8c2;
+  --warn:#8a5a00; --warn-bg:#fff6e0; --warn-line:#e8cd8a; --warn-text:#6b4700;
+  --sun:#fdecec; --sat:#eaf1fb; --sun-fg:#b3261e; --sat-fg:#1a56a8;
+  --ukeoi-bg:#fff6e0; --ukeoi-fg:#8a5a00;
+  --paper:#ffffff; --ink:#12161d;
+  --radius:8px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#111721; --panel:#1a212c; --panel-2:#222b38; --field-bg:#141b25; --row-alt:#1d2530;
+    --line:#2c3644; --line-strong:#4a5769;
+    --text:#e4e9f0; --muted:#9aa6b8;
+    --accent:#7fb0f2; --accent-weak:#1c2b3f;
+    --appbar-bg:#152032; --appbar-fg:#e4e9f0;
+    --danger:#f08a80; --danger-bg:#3a1d1a; --danger-line:#7a3b35; --err-text:#f5b7b1;
+    --ok:#7fcb9c; --ok-bg:#16301f; --ok-line:#2f5c40;
+    --warn:#e5b55f; --warn-bg:#332a12; --warn-line:#6b5623; --warn-text:#f0d9a4;
+    --sun:#3a1d1a; --sat:#1c2b3f; --sun-fg:#f08a80; --sat-fg:#7fb0f2;
+    --ukeoi-bg:#332a12; --ukeoi-fg:#e5b55f;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#111721; --panel:#1a212c; --panel-2:#222b38; --field-bg:#141b25; --row-alt:#1d2530;
+  --line:#2c3644; --line-strong:#4a5769;
+  --text:#e4e9f0; --muted:#9aa6b8;
+  --accent:#7fb0f2; --accent-weak:#1c2b3f;
+  --appbar-bg:#152032; --appbar-fg:#e4e9f0;
+  --danger:#f08a80; --danger-bg:#3a1d1a; --danger-line:#7a3b35; --err-text:#f5b7b1;
+  --ok:#7fcb9c; --ok-bg:#16301f; --ok-line:#2f5c40;
+  --warn:#e5b55f; --warn-bg:#332a12; --warn-line:#6b5623; --warn-text:#f0d9a4;
+  --sun:#3a1d1a; --sat:#1c2b3f; --sun-fg:#f08a80; --sat-fg:#7fb0f2;
+  --ukeoi-bg:#332a12; --ukeoi-fg:#e5b55f;
+}
+@media (prefers-reduced-motion:reduce){ *{transition:none !important} }
+*{box-sizing:border-box}
+/* display を持つクラス（.f / .breakdown など）に hidden を付けても効くようにする */
+[hidden]{display:none !important}
+html,body{margin:0;padding:0}
+body{
+  font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",Meiryo,sans-serif;
+  background:var(--bg); color:var(--text);
+  font-size:15px; line-height:1.6;
+  -webkit-text-size-adjust:100%;
+}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+
+/* ---------- アプリバー ---------- */
+.appbar{
+  position:sticky; top:0; z-index:50;
+  background:var(--appbar-bg); color:var(--appbar-fg);
+  padding:8px 12px; padding-top:calc(8px + env(safe-area-inset-top));
+  display:flex; align-items:center; gap:12px; flex-wrap:wrap;
+  box-shadow:0 1px 4px rgba(0,0,0,.25);
+}
+.appbar h1{font-size:17px;margin:0;font-weight:700;white-space:nowrap}
+.appbar .spacer{flex:1}
+.tabs{display:flex;gap:4px;flex-wrap:wrap}
+.tabs button{
+  background:rgba(255,255,255,.12); color:var(--appbar-fg); border:1px solid rgba(255,255,255,.35);
+  padding:6px 14px; border-radius:999px; cursor:pointer;
+}
+.tabs button[aria-selected="true"]{background:var(--panel);color:var(--accent);font-weight:700}
+.actions{display:flex;gap:6px;flex-wrap:wrap}
+.actions button{
+  background:var(--panel); color:var(--accent); border:1px solid transparent;
+  padding:6px 12px; border-radius:var(--radius); cursor:pointer; font-weight:700;
+}
+.actions button.ghost{background:rgba(255,255,255,.12);color:var(--appbar-fg);border-color:rgba(255,255,255,.4);font-weight:400}
+.actions button:active{transform:translateY(1px)}
+.appbar button:focus-visible{outline:2px solid #fff;outline-offset:2px}
+
+/* ---------- レイアウト ---------- */
+main{max-width:1180px;margin:0 auto;padding:12px 12px 96px}
+.card{
+  background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+  margin-bottom:12px; overflow:hidden;
+}
+.card > h2{
+  margin:0; padding:8px 12px; font-size:14px; font-weight:700;
+  background:var(--panel-2); border-bottom:1px solid var(--line);
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+}
+.card > h2 .hint{font-weight:400;font-size:12px;color:var(--muted)}
+.card-body{padding:12px}
+.card-body > p.lead{margin:0 0 10px;font-size:13px;color:var(--muted)}
+
+.f{display:flex;flex-direction:column;gap:3px}
+.f > label{font-size:12px;color:var(--muted);font-weight:700}
+.f input,.f select,.f textarea{
+  width:100%; padding:7px 8px; border:1px solid var(--line-strong);
+  border-radius:6px; background:var(--field-bg); min-height:36px;
+}
+.f input:focus,.f select:focus,.f textarea:focus,td input:focus,td select:focus{
+  outline:2px solid var(--accent); outline-offset:-1px; border-color:var(--accent);
+}
+.f .note{font-size:11px;color:var(--muted)}
+
+/* ---------- 期間・現場の選択バー ---------- */
+.toolbar{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.toolbar .f{min-width:150px}
+.toolbar .f.wide{flex:1;min-width:220px}
+.month-nav{display:flex;gap:4px}
+.month-nav button{
+  border:1px solid var(--line-strong);background:var(--panel);border-radius:6px;
+  min-width:40px;min-height:36px;cursor:pointer;font-size:16px;
+}
+.sum-chips{display:flex;gap:6px;flex-wrap:wrap;margin-left:auto;align-items:center}
+.chip{
+  background:var(--panel-2);border:1px solid var(--line);border-radius:999px;
+  padding:3px 12px;font-size:12px;white-space:nowrap;
+}
+.chip b{font-size:15px;margin-left:4px;font-variant-numeric:tabular-nums}
+.chip.ukeoi{background:var(--ukeoi-bg);border-color:var(--warn-line);color:var(--ukeoi-fg)}
+
+/* ---------- 出面グリッド ---------- */
+.grid-wrap{overflow:auto;-webkit-overflow-scrolling:touch;max-height:calc(100vh - 300px);min-height:220px}
+table.dz{border-collapse:separate;border-spacing:0;font-variant-numeric:tabular-nums}
+table.dz th,table.dz td{
+  border-right:1px solid var(--line);border-bottom:1px solid var(--line);
+  padding:0;margin:0;background:var(--panel);
+}
+table.dz thead th{
+  position:sticky;top:0;z-index:3;background:var(--panel-2);
+  font-size:11px;font-weight:700;color:var(--muted);
+  padding:3px 2px;text-align:center;white-space:nowrap;
+}
+table.dz thead th .d{display:block;font-size:13px;color:var(--text)}
+table.dz th.c-name,table.dz td.c-name{
+  position:sticky;left:0;z-index:2;width:112px;min-width:112px;max-width:112px;
+  text-align:left;padding:4px 6px;background:var(--panel);
+  border-right:1px solid var(--line-strong);
+}
+table.dz thead th.c-name{z-index:4;background:var(--panel-2)}
+table.dz td.c-name .nm{font-size:13px;font-weight:700;line-height:1.25;word-break:break-all}
+table.dz td.c-name .og{font-size:10px;color:var(--muted);line-height:1.2;word-break:break-all}
+table.dz td.day{width:38px;min-width:38px}
+table.dz th.day.sun,table.dz td.day.sun{background:var(--sun)}
+table.dz th.day.sat,table.dz td.day.sat{background:var(--sat)}
+table.dz th.day.sun{color:var(--sun-fg)}
+table.dz th.day.sat{color:var(--sat-fg)}
+table.dz th.day.sun .d{color:var(--sun-fg)}
+table.dz th.day.sat .d{color:var(--sat-fg)}
+table.dz tbody tr:nth-child(even) td.c-name{background:var(--row-alt)}
+.cell{
+  display:block;width:100%;min-height:38px;border:none;background:transparent;
+  cursor:pointer;font-size:14px;font-weight:700;color:var(--text);
+  padding:6px 2px;line-height:1.1;font-variant-numeric:tabular-nums;
+}
+.cell:hover{background:var(--accent-weak)}
+.cell:focus-visible{outline:2px solid var(--accent);outline-offset:-2px}
+.cell.blank{color:var(--line-strong);font-weight:400}
+.cell.ukeoi{background:var(--ukeoi-bg);color:var(--ukeoi-fg)}
+.cell .mk{display:block;font-size:9px;font-weight:400;color:var(--muted);line-height:1}
+.cell.ukeoi .mk{color:var(--ukeoi-fg)}
+table.dz td.tot,table.dz th.tot{
+  width:52px;min-width:52px;text-align:right;padding:4px 6px;
+  background:var(--panel-2);font-weight:700;font-size:13px;
+  border-left:1px solid var(--line-strong);
+}
+table.dz th.tot{border-left:1px solid var(--line-strong)}
+/* 合計 2 行を下端に貼り付ける。2 行とも bottom:0 だと重なるので段を分ける */
+table.dz tfoot td,table.dz tfoot th{
+  position:sticky;z-index:3;background:var(--panel-2);
+  font-size:12px;font-weight:700;text-align:center;
+  height:27px;line-height:19px;padding:3px 2px;
+}
+table.dz tfoot tr:first-child > *{bottom:27px}
+table.dz tfoot tr:last-child > *{bottom:0}
+table.dz tfoot th.c-name{z-index:4;text-align:left;font-size:12px;background:var(--panel-2)}
+table.dz tfoot td.zero{color:var(--muted);font-weight:400}
+
+/* 「すべての現場」で見ているときの現場記号（①②…）の凡例 */
+.legend{
+  display:flex;gap:10px;flex-wrap:wrap;align-items:center;
+  padding:7px 12px;border-bottom:1px solid var(--line);
+  background:var(--panel-2);font-size:12px;color:var(--muted);
+}
+.legend b{color:var(--text);font-size:13px;margin-right:3px}
+
+/* ---------- 日別入力 ---------- */
+.day-list{display:flex;flex-direction:column;gap:8px}
+.day-row{
+  border:1px solid var(--line);border-radius:10px;background:var(--panel);
+  padding:8px 10px;display:grid;grid-template-columns:1fr auto;gap:8px 10px;align-items:center;
+}
+.day-row.on{border-color:var(--accent);background:var(--accent-weak)}
+.day-row .who{min-width:0}
+.day-row .who .nm{font-weight:700;font-size:15px;word-break:break-all}
+.day-row .who .og{font-size:11px;color:var(--muted);word-break:break-all}
+.day-row .quick{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.qb{
+  border:1px solid var(--line-strong);background:var(--panel);border-radius:8px;
+  min-width:46px;min-height:40px;cursor:pointer;font-weight:700;font-variant-numeric:tabular-nums;
+}
+.qb.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.qb.zero.on{background:var(--muted);border-color:var(--muted)}
+/* 残業・区分・備考は、その人に人工が入ってから出す（並びを短く保つ） */
+.day-row .more{grid-column:1/-1;display:none;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.day-row.on .more{display:flex}
+.day-row .more .f{min-width:104px;flex:1}
+.day-row .more .f input,.day-row .more .f select{min-height:40px}
+
+/* ---------- 一覧・マスタ ---------- */
+.tbl-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table.tbl{border-collapse:collapse;width:100%;min-width:600px}
+table.tbl th,table.tbl td{border:1px solid var(--line);padding:3px 4px;vertical-align:middle}
+table.tbl th{background:var(--panel-2);font-size:12px;color:var(--muted);font-weight:700;white-space:nowrap;padding:6px 4px}
+table.tbl td input,table.tbl td select{
+  width:100%;border:1px solid transparent;background:transparent;padding:5px 4px;border-radius:4px;min-height:32px;
+}
+table.tbl td input:hover,table.tbl td select:hover{border-color:var(--line)}
+table.tbl td.num input{text-align:right;font-variant-numeric:tabular-nums}
+table.tbl td.ctr{text-align:center}
+.rownum{width:32px;text-align:center;color:var(--muted);font-size:12px;background:var(--row-alt)}
+.rowdel{width:36px;text-align:center}
+.rowdel button{
+  border:none;background:transparent;color:var(--danger);cursor:pointer;
+  font-size:17px;line-height:1;padding:5px 7px;border-radius:4px;
+}
+.rowdel button:hover{background:var(--danger-bg)}
+.tbl-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0 0}
+.btn-add{
+  background:var(--accent-weak);color:var(--accent);border:1px dashed var(--accent);
+  padding:6px 14px;border-radius:var(--radius);cursor:pointer;font-weight:700;
+}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{padding:8px 18px;border-radius:var(--radius);border:1px solid var(--line-strong);background:var(--panel);cursor:pointer}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:700}
+.btn.danger{color:var(--danger);border-color:var(--danger-line)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,.qb:focus-visible,.rowdel button:focus-visible,.btn-add:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.badge{display:inline-block;padding:1px 8px;border-radius:999px;font-size:11px;border:1px solid}
+.badge.ok{background:var(--ok-bg);color:var(--ok);border-color:var(--ok-line)}
+.badge.no{background:var(--panel-2);color:var(--muted);border-color:var(--line)}
+.empty{padding:44px 16px;text-align:center;color:var(--muted)}
+.empty .big{font-size:34px;opacity:.4;display:block;margin-bottom:6px}
+.empty .btn{margin-top:12px}
+
+/* ---------- モーダル ---------- */
+.modal{
+  position:fixed;inset:0;background:rgba(20,26,36,.65);z-index:200;
+  display:flex;align-items:center;justify-content:center;padding:12px;
+}
+.modal[hidden]{display:none}
+.modal-inner{
+  background:var(--panel);border-radius:10px;width:min(520px,100%);max-height:100%;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.modal-head{padding:10px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.modal-head h3{margin:0;font-size:15px;flex:1}
+.modal-head .sub{font-size:12px;color:var(--muted)}
+.modal-body{padding:14px;overflow:auto}
+.modal-foot{
+  padding:10px 14px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;
+}
+.modal-foot .left{margin-right:auto;display:flex;gap:6px}
+.nink-pad{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:4px 0 12px}
+.nink-pad button{
+  border:1px solid var(--line-strong);background:var(--panel);border-radius:8px;
+  min-height:52px;font-size:17px;font-weight:700;cursor:pointer;font-variant-numeric:tabular-nums;
+}
+.nink-pad button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.stack{display:flex;flex-direction:column;gap:10px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.seg{display:flex;gap:0;border:1px solid var(--line-strong);border-radius:8px;overflow:hidden}
+.seg button{flex:1;border:none;background:var(--panel);padding:9px 6px;cursor:pointer;font-weight:700;min-height:40px}
+.seg button.on{background:var(--accent);color:#fff}
+.breakdown{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.breakdown .bd{
+  border:1px solid var(--line-strong);background:var(--panel-2);border-radius:999px;
+  padding:4px 12px;font-size:12px;cursor:pointer;
+}
+.breakdown .bd.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.breakdown .bd b{margin-left:5px;font-variant-numeric:tabular-nums}
+
+/* ---------- 警告・トースト ---------- */
+.alerts{margin-bottom:12px}
+.alert{
+  background:var(--warn-bg);border:1px solid var(--warn-line);border-left:4px solid var(--warn);
+  color:var(--warn-text);padding:8px 12px;border-radius:6px;font-size:13px;margin-bottom:6px;
+}
+.alert.err{background:var(--danger-bg);border-color:var(--danger-line);border-left-color:var(--danger);color:var(--err-text)}
+.alert.info{background:var(--accent-weak);border-color:var(--line);border-left-color:var(--accent);color:var(--text)}
+#toast{
+  position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);
+  background:#1b2330;color:#fff;padding:10px 22px;border-radius:999px;font-size:14px;
+  opacity:0;pointer-events:none;transition:.2s;z-index:300;box-shadow:0 4px 16px rgba(0,0,0,.3);
+}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ---------- スマホ ---------- */
+@media (max-width:760px){
+  /* iOS Safari は 16px 未満の入力欄でフォーカス時に拡大するため下限を 16px にする */
+  input,select,textarea{font-size:16px}
+  main{padding:10px 8px 80px}
+  .appbar{gap:8px}
+  .appbar h1{font-size:15px}
+  .tabs button{padding:6px 11px;font-size:13px}
+  .card-body{padding:10px}
+  .sum-chips{margin-left:0;width:100%}
+  .grid-wrap{max-height:calc(100vh - 340px)}
+  table.dz th.c-name,table.dz td.c-name{width:92px;min-width:92px;max-width:92px}
+  .day-row{grid-template-columns:1fr}
+  /* グリッドの子は既定で縮まないため、明示しないと備考欄が画面外にはみ出す */
+  .day-row > *{min-width:0}
+  .day-row .quick{justify-content:flex-start}
+  .qb{min-width:54px;min-height:44px}
+  .btn{min-height:44px}
+  .nink-pad button{min-height:56px}
+}
+
+/* ---------- 印刷（A4 横） ---------- */
+#print-area{display:none}
+@media print{
+  @page{size:A4 landscape;margin:8mm}
+  html,body{background:#fff}
+  .appbar,main,#toast,.modal{display:none !important}
+  #print-area{display:block}
+}
+#print-area{color:#000;font-size:9pt;line-height:1.3}
+#print-area .p-title{text-align:center;font-size:16pt;font-weight:700;letter-spacing:.5em;margin:0 0 6px}
+#print-area .p-head{display:flex;justify-content:space-between;gap:12px;font-size:9pt;margin-bottom:5px}
+#print-area .p-head div{white-space:nowrap}
+#print-area table{border-collapse:collapse;width:100%;table-layout:fixed;margin-bottom:6px}
+#print-area th,#print-area td{border:1px solid #000;padding:1.5px 2px;text-align:center;font-size:8pt}
+#print-area th{background:#eee;font-weight:700}
+#print-area .p-nm{text-align:left;width:26mm;font-size:8pt;word-break:break-all}
+#print-area .p-og{text-align:left;width:20mm;font-size:7pt;word-break:break-all}
+#print-area .p-tot{width:12mm;font-weight:700;background:#f4f4f4}
+#print-area .p-sun{background:#f2f2f2}
+#print-area tfoot td{font-weight:700;background:#f4f4f4}
+#print-area .p-sec{font-weight:700;font-size:9.5pt;margin:8px 0 3px;border-left:4px solid #000;padding-left:5px}
+#print-area .p-foot{font-size:7.5pt;color:#333;display:flex;justify-content:space-between;margin-top:4px}
+#print-area .p-sign{width:100%;margin-top:6px}
+#print-area .p-sign td{height:14mm;vertical-align:bottom;font-size:7.5pt;color:#333}
+</style>
+</head>
+<body>
+
+<header class="appbar">
+  <h1>出面表</h1>
+  <nav class="tabs" role="tablist">
+    <button id="tab-grid"   role="tab" aria-selected="true"  aria-controls="view-grid">月間表</button>
+    <button id="tab-day"    role="tab" aria-selected="false" aria-controls="view-day">日別入力</button>
+    <button id="tab-master" role="tab" aria-selected="false" aria-controls="view-master">名簿・現場</button>
+    <button id="tab-data"   role="tab" aria-selected="false" aria-controls="view-data">出力・取込</button>
+  </nav>
+  <span class="spacer"></span>
+  <div class="actions">
+    <button id="btn-install" class="ghost" hidden>ホーム画面に追加</button>
+    <button id="btn-print" class="ghost">印刷</button>
+  </div>
+</header>
+
+<main>
+  <div id="alerts" class="alerts"></div>
+
+  <!-- ============ 月間表 ============ -->
+  <section id="view-grid" role="tabpanel" aria-labelledby="tab-grid">
+    <div class="card">
+      <div class="card-body">
+        <div class="toolbar">
+          <div class="f">
+            <label for="ym">年月</label>
+            <div style="display:flex;gap:6px">
+              <input type="month" id="ym">
+              <div class="month-nav">
+                <button type="button" id="ym-prev" title="前の月">‹</button>
+                <button type="button" id="ym-next" title="次の月">›</button>
+              </div>
+            </div>
+          </div>
+          <div class="f wide">
+            <label for="site">現場（工事番号）</label>
+            <select id="site"></select>
+          </div>
+          <div class="sum-chips" id="grid-chips"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>出面表 <span class="hint">マス目を押すと人工を入力できます</span></h2>
+      <div class="legend" id="site-legend" hidden></div>
+      <div class="grid-wrap" id="grid-wrap"></div>
+    </div>
+  </section>
+
+  <!-- ============ 日別入力 ============ -->
+  <section id="view-day" role="tabpanel" aria-labelledby="tab-day" hidden>
+    <div class="card">
+      <div class="card-body">
+        <div class="toolbar">
+          <div class="f">
+            <label for="d-date">作業日</label>
+            <div style="display:flex;gap:6px">
+              <input type="date" id="d-date">
+              <div class="month-nav">
+                <button type="button" id="d-prev" title="前の日">‹</button>
+                <button type="button" id="d-next" title="次の日">›</button>
+              </div>
+            </div>
+          </div>
+          <div class="f wide">
+            <label for="d-site">現場（工事番号）</label>
+            <select id="d-site"></select>
+          </div>
+          <div class="sum-chips" id="day-chips"></div>
+        </div>
+        <div class="btn-row" style="margin-top:10px">
+          <button type="button" class="btn" id="d-copy">前回の出面をコピー</button>
+          <button type="button" class="btn" id="d-clear">この日を全部消す</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>作業員 <span class="hint">押すだけで人工が入ります。入力するたび自動で保存されます</span></h2>
+      <div class="card-body">
+        <div class="day-list" id="day-list"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 名簿・現場 ============ -->
+  <section id="view-master" role="tabpanel" aria-labelledby="tab-master" hidden>
+    <div class="card">
+      <h2>作業員名簿 <span class="hint">並び順の小さい人から上に出ます</span></h2>
+      <div class="card-body">
+        <div class="tbl-wrap">
+          <table class="tbl" id="tbl-workers">
+            <thead><tr>
+              <th class="rownum">No.</th><th>氏名</th><th>所属会社</th><th>職種</th>
+              <th>既定の区分</th><th>並び順</th><th>在籍</th><th class="rowdel"></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="tbl-foot">
+          <button type="button" class="btn-add" id="add-worker">＋ 作業員を追加</button>
+          <span class="chip">登録 <b id="worker-count">0</b> 名</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>現場（工事台帳） <span class="hint">工事番号が全帳票の突合キーになります</span></h2>
+      <div class="card-body">
+        <div class="tbl-wrap">
+          <table class="tbl" id="tbl-sites">
+            <thead><tr>
+              <th class="rownum">No.</th><th>工事番号</th><th>工事名</th><th>元請 / 発注者</th>
+              <th>状態</th><th class="rowdel"></th>
+            </tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="tbl-foot">
+          <button type="button" class="btn-add" id="add-site">＋ 現場を追加</button>
+          <span class="chip">登録 <b id="site-count">0</b> 件</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>印刷の見出し</h2>
+      <div class="card-body">
+        <div class="two">
+          <div class="f">
+            <label for="m-org">自社名（提出者）</label>
+            <input type="text" id="m-org" placeholder="株式会社○○工業">
+          </div>
+          <div class="f">
+            <label for="m-to">提出先</label>
+            <input type="text" id="m-to" placeholder="○○建設株式会社 御中">
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 出力・取込 ============ -->
+  <section id="view-data" role="tabpanel" aria-labelledby="tab-data" hidden>
+    <div class="card">
+      <h2>書き出し</h2>
+      <div class="card-body">
+        <p class="lead">表示中の年月・現場が対象です。CSV は Excel でそのまま開けます（文字化け防止の BOM 付き）。</p>
+        <div class="btn-row">
+          <button type="button" class="btn primary" id="ex-matrix">出面表 CSV（表の形）</button>
+          <button type="button" class="btn" id="ex-detail">明細 CSV（1 行 1 人日）</button>
+          <button type="button" class="btn" id="ex-json">バックアップ（JSON）</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>作業日報から取り込む</h2>
+      <div class="card-body">
+        <p class="lead">
+          作業日報アプリの作業員欄（氏名・人工・残業）を出面表に流し込みます。
+          同じ日・同じ作業員・同じ現場のマスがすでに埋まっている場合は上書きされます。
+        </p>
+        <div class="toolbar" style="margin-bottom:10px">
+          <div class="f">
+            <label for="imp-range">対象期間</label>
+            <select id="imp-range">
+              <option value="month">表示中の月だけ</option>
+              <option value="all">全期間</option>
+            </select>
+          </div>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn primary" id="imp-local">この端末の日報から取り込む</button>
+          <label class="btn" style="display:inline-flex;align-items:center">
+            人工集計 CSV を選ぶ
+            <input type="file" id="imp-csv" accept=".csv,text/csv" hidden>
+          </label>
+        </div>
+        <p class="lead" style="margin:10px 0 0">
+          別の端末で入力した日報は、日報アプリの「人工集計 CSV」を書き出してから、こちらで読み込んでください。
+        </p>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>復元・初期化</h2>
+      <div class="card-body">
+        <div class="btn-row">
+          <label class="btn" style="display:inline-flex;align-items:center">
+            バックアップ（JSON）を読み込む
+            <input type="file" id="imp-json" accept=".json,application/json" hidden>
+          </label>
+          <button type="button" class="btn danger" id="wipe">この端末のデータを全部消す</button>
+        </div>
+        <p class="lead" style="margin:10px 0 0">
+          データはこの端末のブラウザ内にだけ保存されます。端末を替えるときは JSON を書き出して持ち運んでください。
+        </p>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- ============ マス目の入力 ============ -->
+<div class="modal" id="cell-modal" hidden>
+  <div class="modal-inner" role="dialog" aria-modal="true" aria-labelledby="cell-title">
+    <div class="modal-head">
+      <div style="flex:1;min-width:0">
+        <h3 id="cell-title">人工の入力</h3>
+        <div class="sub" id="cell-sub"></div>
+      </div>
+      <button type="button" class="btn" id="cell-close">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="breakdown" id="cell-breakdown" hidden></div>
+      <div class="f" id="cell-site-f" style="margin-bottom:12px">
+        <label for="cell-site">現場</label>
+        <select id="cell-site"></select>
+      </div>
+      <label style="font-size:12px;color:var(--muted);font-weight:700">人工</label>
+      <div class="nink-pad" id="nink-pad"></div>
+      <div class="stack">
+        <div class="two">
+          <div class="f">
+            <label for="cell-nink">人工（直接入力）</label>
+            <input type="number" id="cell-nink" inputmode="decimal" step="0.25" min="0">
+          </div>
+          <div class="f">
+            <label for="cell-ot">残業（時間）</label>
+            <input type="number" id="cell-ot" inputmode="decimal" step="0.25" min="0">
+          </div>
+        </div>
+        <div class="f">
+          <label>区分</label>
+          <div class="seg" id="cell-type">
+            <button type="button" data-v="常用">常用</button>
+            <button type="button" data-v="請負">請負</button>
+          </div>
+        </div>
+        <div class="f">
+          <label for="cell-note">備考</label>
+          <input type="text" id="cell-note" placeholder="早出・現場移動など">
+        </div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <div class="left">
+        <button type="button" class="btn" id="cell-prev" title="前の作業員">↑</button>
+        <button type="button" class="btn" id="cell-next" title="次の作業員">↓</button>
+      </div>
+      <button type="button" class="btn danger" id="cell-del">消す</button>
+      <button type="button" class="btn primary" id="cell-ok">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 確認ダイアログ ============ -->
+<div class="modal" id="ask-modal" hidden>
+  <div class="modal-inner" style="width:min(440px,100%)" role="dialog" aria-modal="true" aria-labelledby="ask-title">
+    <div class="modal-head"><h3 id="ask-title">確認</h3></div>
+    <div class="modal-body"><div id="ask-msg" style="white-space:pre-wrap"></div></div>
+    <div class="modal-foot">
+      <button type="button" class="btn" id="ask-cancel">キャンセル</button>
+      <button type="button" class="btn primary" id="ask-ok">OK</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<div id="print-area"></div>
+
+<script>
+"use strict";
+
+/* ============================================================
+   定数・ユーティリティ
+   ============================================================ */
+const LS_KEY     = "construction-attendance:v1";
+const REPORT_KEY = "construction-daily-report:v1";   /* 作業日報アプリの保存先 */
+const WORK_TYPES = ["常用", "請負"];
+const NINK_PAD   = [0, 0.25, 0.5, 0.75, 1, 1.25, 1.5, 2];
+const DAY_QUICK  = [0, 0.5, 1, 1.5];
+const WDAY       = ["日", "月", "火", "水", "木", "金", "土"];
+
+const $  = (sel, root) => (root || document).querySelector(sel);
+const $$ = (sel, root) => Array.from((root || document).querySelectorAll(sel));
+const esc = (s) => String(s == null ? "" : s).replace(/[&<>"']/g, (c) =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const num = (v) => { const n = parseFloat(String(v == null ? "" : v).replace(/,/g, "")); return isFinite(n) ? n : 0; };
+const uid = () => "a" + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const todayISO = () => { const d = new Date(); return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10); };
+/** 人工数は丸めない。表示の浮動小数点誤差だけ潰す */
+const fmtNink = (n) => (Math.round(n * 1000) / 1000).toString();
+
+const ymOf   = (iso) => iso.slice(0, 7);
+const daysIn = (ym) => { const [y, m] = ym.split("-").map(Number); return new Date(y, m, 0).getDate(); };
+const dateOf = (ym, d) => ym + "-" + String(d).padStart(2, "0");
+const wdayOf = (iso) => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d).getDay(); };
+const shiftDate = (iso, n) => {
+  const [y, m, d] = iso.split("-").map(Number);
+  const dt = new Date(y, m - 1, d + n);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}-${String(dt.getDate()).padStart(2, "0")}`;
+};
+const shiftMonth = (ym, n) => {
+  const [y, m] = ym.split("-").map(Number);
+  const dt = new Date(y, m - 1 + n, 1);
+  return `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+};
+const jpDate = (iso) => {
+  if (!iso) return "";
+  const [y, m, d] = iso.split("-").map(Number);
+  return `${y}年${m}月${d}日（${WDAY[wdayOf(iso)]}）`;
+};
+
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+/* 自前の確認ダイアログ。埋め込み環境では confirm/alert が無効化されることがあるため使わない */
+let askResolve = null;
+function ask(message, opts) {
+  opts = opts || {};
+  return new Promise((resolve) => {
+    closeAsk(false);
+    $("#ask-title").textContent = opts.title || "確認";
+    $("#ask-msg").textContent = message;
+    const ok = $("#ask-ok"), cancel = $("#ask-cancel");
+    ok.textContent = opts.okText || "OK";
+    ok.classList.toggle("danger", !!opts.danger);
+    ok.classList.toggle("primary", !opts.danger);
+    cancel.hidden = !!opts.alertOnly;
+    $("#ask-modal").hidden = false;
+    askResolve = resolve;
+    setTimeout(() => ok.focus(), 0);
+  });
+}
+function closeAsk(v) {
+  if (!askResolve) return;
+  const r = askResolve;
+  askResolve = null;
+  $("#ask-modal").hidden = true;
+  r(v);
+}
+function notify(message, title) {
+  return ask(message, { title: title || "お知らせ", alertOnly: true, okText: "閉じる" });
+}
+
+/* ============================================================
+   祝日（出面表は日曜・祝日を赤で出すため、表示のためだけに持つ）
+   1980〜2099 年に対応。過去の名称変更（体育の日→スポーツの日など）や
+   オリンピック年の特例移動は追わない。
+   ============================================================ */
+const nthMonday = (y, m, nth) => {
+  const first = new Date(y, m - 1, 1).getDay();
+  return 1 + ((8 - first) % 7) + (nth - 1) * 7;   /* その月の第 nth 月曜の日 */
+};
+function holidayMap(y) {
+  const base = {};
+  const set = (m, d, name) => { if (d >= 1) base[`${y}-${String(m).padStart(2, "0")}-${String(d).padStart(2, "0")}`] = name; };
+  set(1, 1, "元日");
+  set(1, nthMonday(y, 1, 2), "成人の日");
+  set(2, 11, "建国記念の日");
+  if (y >= 2020) set(2, 23, "天皇誕生日");
+  set(3, Math.floor(20.8431 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4)), "春分の日");
+  set(4, 29, "昭和の日");
+  set(5, 3, "憲法記念日");
+  set(5, 4, "みどりの日");
+  set(5, 5, "こどもの日");
+  set(7, nthMonday(y, 7, 3), "海の日");
+  set(8, 11, "山の日");
+  set(9, nthMonday(y, 9, 3), "敬老の日");
+  set(9, Math.floor(23.2488 + 0.242194 * (y - 1980) - Math.floor((y - 1980) / 4)), "秋分の日");
+  set(10, nthMonday(y, 10, 2), "スポーツの日");
+  set(11, 3, "文化の日");
+  set(11, 23, "勤労感謝の日");
+
+  const h = Object.assign({}, base);
+  /* 国民の休日: 祝日に挟まれた平日（2026 年の 9/22 など） */
+  Object.keys(base).forEach((iso) => {
+    const d1 = shiftDate(iso, 1);
+    if (base[shiftDate(iso, 2)] && !base[d1] && wdayOf(d1) !== 0) h[d1] = "国民の休日";
+  });
+  /* 振替休日: 日曜と重なったら、休日でない最初の翌日に移す */
+  Object.keys(base).sort().forEach((iso) => {
+    if (wdayOf(iso) !== 0) return;
+    let d = shiftDate(iso, 1);
+    while (h[d]) d = shiftDate(d, 1);
+    h[d] = "振替休日";
+  });
+  return h;
+}
+const holCache = {};
+function holidayName(iso) {
+  const y = +iso.slice(0, 4);
+  if (!holCache[y]) holCache[y] = holidayMap(y);
+  return holCache[y][iso] || "";
+}
+/** 日曜・祝日を赤、土曜を青。出面表の慣習に合わせる */
+function dayClass(iso) {
+  if (wdayOf(iso) === 0 || holidayName(iso)) return "sun";
+  if (wdayOf(iso) === 6) return "sat";
+  return "";
+}
+
+/* ============================================================
+   ストレージ
+   ============================================================ */
+let db = { meta: { orgName: "", submitTo: "" }, workers: [], sites: [], entries: [] };
+
+/** localStorage が使えるか実際に書いて確かめる（プライベートモード・埋め込み表示では使えないことがある） */
+let storageOK = (function () {
+  try {
+    localStorage.setItem("__probe__", "1");
+    localStorage.removeItem("__probe__");
+    return true;
+  } catch (e) { return false; }
+})();
+
+function loadAll() {
+  if (!storageOK) return;
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return;
+    const o = JSON.parse(raw);
+    db.meta    = Object.assign({ orgName: "", submitTo: "" }, o.meta || {});
+    db.workers = Array.isArray(o.workers) ? o.workers : [];
+    db.sites   = Array.isArray(o.sites) ? o.sites : [];
+    db.entries = Array.isArray(o.entries) ? o.entries : [];
+  } catch (e) {
+    toast("保存データの読込に失敗しました");
+  }
+}
+
+let saveTimer = null;
+function persist(now) {
+  clearTimeout(saveTimer);
+  if (!storageOK) return;
+  const write = () => {
+    try {
+      localStorage.setItem(LS_KEY, JSON.stringify(db));
+    } catch (e) {
+      notify(
+        "保存に失敗しました。ブラウザの保存容量が上限に達している可能性があります。\n" +
+        "「出力・取込」からバックアップ（JSON）を書き出してください。",
+        "保存できません"
+      );
+    }
+  };
+  if (now) write(); else saveTimer = setTimeout(write, 400);
+}
+
+/* ============================================================
+   出面データ（日付 × 作業員 × 現場）
+   ============================================================ */
+const ekey = (date, workerId, siteId) => date + "|" + workerId + "|" + siteId;
+let index = new Map();
+
+function reindex() {
+  index = new Map();
+  db.entries.forEach((e) => index.set(ekey(e.date, e.workerId, e.siteId), e));
+  bump();
+}
+function getEntry(date, workerId, siteId) {
+  return index.get(ekey(date, workerId, siteId)) || null;
+}
+/**
+ * 人工・残業・備考がすべて空なら行そのものを消す（空の器を残さない）。
+ * 人工 0 でも備考があれば「出勤したが人工 0」として残す。
+ */
+function putEntry(date, workerId, siteId, vals) {
+  const k = ekey(date, workerId, siteId);
+  let e = index.get(k);
+  const nink = num(vals.nink), ot = num(vals.ot), note = (vals.note || "").trim();
+  if (!nink && !ot && !note) {
+    if (e) { db.entries.splice(db.entries.indexOf(e), 1); index.delete(k); bump(); }
+    persist();
+    return null;
+  }
+  if (!e) { e = { date, workerId, siteId }; db.entries.push(e); index.set(k, e); }
+  e.nink = nink;
+  e.ot = ot;
+  e.type = WORK_TYPES.indexOf(vals.type) >= 0 ? vals.type : "常用";
+  e.note = note;
+  bump();
+  persist();
+  return e;
+}
+function delEntry(date, workerId, siteId) {
+  const k = ekey(date, workerId, siteId);
+  const e = index.get(k);
+  if (!e) return;
+  db.entries.splice(db.entries.indexOf(e), 1);
+  index.delete(k);
+  bump();
+  persist();
+}
+
+/* ---- マスタの参照 ---- */
+const workerById = (id) => db.workers.find((w) => w.id === id) || null;
+const siteById   = (id) => db.sites.find((s) => s.id === id) || null;
+function siteLabel(id) {
+  const s = siteById(id);
+  if (!s) return "（現場なし）";
+  return [s.projectNo, s.projectName].filter(Boolean).join(" ") || "（名称未設定）";
+}
+function siteShort(id) {
+  const s = siteById(id);
+  if (!s) return "―";
+  return s.projectNo || s.projectName || "―";
+}
+function sortedWorkers() {
+  return db.workers.slice().sort((a, b) => {
+    const sa = a.sort === "" || a.sort == null ? 9999 : num(a.sort);
+    const sb = b.sort === "" || b.sort == null ? 9999 : num(b.sort);
+    if (sa !== sb) return sa - sb;
+    return String(a.name || "").localeCompare(String(b.name || ""), "ja");
+  });
+}
+/**
+ * 表に出す作業員。退職者でもその月に出面があれば残す（過去の表が欠けないように）。
+ */
+function visibleWorkers() {
+  const used = agg().rows;
+  return sortedWorkers().filter((w) => w.active !== false || used.has(w.id));
+}
+
+/* ============================================================
+   画面の状態
+   ============================================================ */
+const state = {
+  view: "grid",
+  ym: ymOf(todayISO()),
+  siteId: "",          /* "" = すべての現場 */
+  date: todayISO(),
+  daySiteId: "",
+};
+
+/* ============================================================
+   現場・年月の選択
+   ============================================================ */
+function fillSiteSelect(sel, value, opts) {
+  opts = opts || {};
+  /* 完了した現場は普段は隠すが、選択中のものと、開いている現場が 1 つも無いときは出す */
+  let list = db.sites.filter((s) => s.closed !== true || s.id === value);
+  if (!list.length) list = db.sites.slice();
+  const html = [];
+  if (opts.allowAll) html.push(`<option value="">すべての現場</option>`);
+  if (!list.length) html.push(`<option value="">（現場が未登録です）</option>`);
+  list.forEach((s) => {
+    html.push(`<option value="${esc(s.id)}">${esc(siteLabel(s.id))}</option>`);
+  });
+  sel.innerHTML = html.join("");
+  sel.value = value || "";
+  if (sel.value !== (value || "")) sel.value = list.length ? list[0].id : "";
+  return sel.value;
+}
+
+function refreshSelectors() {
+  $("#ym").value = state.ym;
+  state.siteId = fillSiteSelect($("#site"), state.siteId, { allowAll: true });
+  $("#d-date").value = state.date;
+  if (!state.daySiteId && db.sites.length) state.daySiteId = state.siteId || db.sites[0].id;
+  state.daySiteId = fillSiteSelect($("#d-site"), state.daySiteId, { allowAll: false });
+}
+
+/* ============================================================
+   集計
+   表示中の「年月 × 現場」ぶんを 1 回で数え、マス目・行計・日計・総計に配る。
+   セルごとに全件を走査すると 1 か月分の描画で数十万回になるため、
+   データが変わるまで結果を使い回す。
+   ============================================================ */
+let dataVersion = 0;
+let aggCache = null;
+const bump = () => { dataVersion++; };
+
+function agg() {
+  const key = state.ym + "|" + state.siteId + "|" + dataVersion;
+  if (aggCache && aggCache.key === key) return aggCache;
+  const cells = new Map(), rows = new Map(), cols = new Map(), sites = new Set();
+  const sum = { nink: 0, ot: 0, jyoyo: 0, ukeoi: 0, manDays: 0 };
+  db.entries.forEach((e) => {
+    if (ymOf(e.date) !== state.ym) return;
+    if (state.siteId && e.siteId !== state.siteId) return;
+    const n = num(e.nink), o = num(e.ot);
+    sites.add(e.siteId);
+
+    const ck = e.date + "|" + e.workerId;
+    let a = cells.get(ck); if (!a) { a = []; cells.set(ck, a); }
+    a.push(e);
+
+    let r = rows.get(e.workerId); if (!r) { r = { nink: 0, ot: 0, days: 0 }; rows.set(e.workerId, r); }
+    r.nink += n; r.ot += o; if (n > 0) r.days++;
+
+    let c = cols.get(e.date); if (!c) { c = { nink: 0, ot: 0, people: new Set() }; cols.set(e.date, c); }
+    c.nink += n; c.ot += o; if (n > 0) c.people.add(e.workerId);
+
+    sum.nink += n; sum.ot += o;
+    if (e.type === "請負") sum.ukeoi += n; else sum.jyoyo += n;
+    if (n > 0) sum.manDays++;
+  });
+  aggCache = { key, cells, rows, cols, sites, sum };
+  return aggCache;
+}
+
+/**
+ * 「すべての現場」で見るときの現場記号。工事番号をマスに書くと表が読めなくなるので、
+ * その月に出てくる現場へ ①②… を振り、対応は表の上に凡例として出す。
+ */
+const CIRCLED = "①②③④⑤⑥⑦⑧⑨⑩⑪⑫⑬⑭⑮⑯⑰⑱⑲⑳".split("");
+function siteMarks() {
+  const present = agg().sites;
+  const m = new Map();
+  const add = (id) => { if (!m.has(id)) m.set(id, CIRCLED[m.size] || "(" + (m.size + 1) + ")"); };
+  db.sites.forEach((s) => { if (present.has(s.id)) add(s.id); });
+  present.forEach((id) => add(id));   /* マスタから消えた現場の出面も取りこぼさない */
+  return m;
+}
+
+const NO_ROW = { nink: 0, ot: 0, days: 0 };
+/** 表示中の現場しぼり込みに合う entries だけを返す */
+const entriesOf    = (date, workerId) => agg().cells.get(date + "|" + workerId) || [];
+const rowTotal     = (workerId) => agg().rows.get(workerId) || NO_ROW;
+const monthSummary = () => agg().sum;
+function colTotal(date) {
+  const c = agg().cols.get(date);
+  return c ? { nink: c.nink, ot: c.ot, people: c.people.size } : { nink: 0, ot: 0, people: 0 };
+}
+
+/* ============================================================
+   月間表
+   ============================================================ */
+function renderGrid() {
+  const wrap = $("#grid-wrap");
+  const ym = state.ym;
+  const n = daysIn(ym);
+  const workers = visibleWorkers();
+
+  renderChips();
+  renderLegend();
+
+  if (!db.workers.length) {
+    wrap.innerHTML = `<div class="empty"><span class="big">👷</span>
+      作業員がまだ登録されていません<br>
+      <button type="button" class="btn primary" id="go-master">名簿を登録する</button></div>`;
+    $("#go-master").addEventListener("click", () => showView("master"));
+    return;
+  }
+  if (!workers.length) {
+    wrap.innerHTML = `<div class="empty"><span class="big">🗓</span>この月に出面のある作業員がいません</div>`;
+    return;
+  }
+
+  const days = [];
+  for (let d = 1; d <= n; d++) days.push(dateOf(ym, d));
+
+  const head = ['<tr><th class="c-name">氏名</th>'];
+  days.forEach((iso) => {
+    const cls = dayClass(iso);
+    const hol = holidayName(iso);
+    head.push(`<th class="day ${cls}" title="${esc(jpDate(iso) + (hol ? " " + hol : ""))}">` +
+      `<span class="d">${+iso.slice(8)}</span>${WDAY[wdayOf(iso)]}</th>`);
+  });
+  head.push('<th class="tot">人工計</th><th class="tot">残業</th></tr>');
+
+  const mk = siteMarks();
+  const showMarks = !state.siteId && mk.size > 1;
+
+  const body = [];
+  workers.forEach((w) => {
+    const cells = [`<td class="c-name"><div class="nm">${esc(w.name || "（未設定）")}</div>` +
+      (w.org ? `<div class="og">${esc(w.org)}</div>` : "") + `</td>`];
+    days.forEach((iso) => {
+      const list = entriesOf(iso, w.id);
+      const sum = list.reduce((a, e) => a + num(e.nink), 0);
+      const otSum = list.reduce((a, e) => a + num(e.ot), 0);
+      const ukeoi = list.length > 0 && list.every((e) => e.type === "請負");
+      const marks = [];
+      if (showMarks && list.length) marks.push(list.map((e) => mk.get(e.siteId) || "").join(""));
+      if (otSum) marks.push("残" + fmtNink(otSum));
+      const has = list.length > 0;
+      const label = has ? (sum ? fmtNink(sum) : "―") : "";
+      cells.push(`<td class="day ${dayClass(iso)}">` +
+        `<button type="button" class="cell ${has ? "" : "blank"} ${ukeoi ? "ukeoi" : ""}" ` +
+        `data-d="${iso}" data-w="${esc(w.id)}" ` +
+        `aria-label="${esc(jpDate(iso) + " " + (w.name || ""))}">${esc(label || "・")}` +
+        (marks.length ? `<span class="mk">${esc(marks.join(" "))}</span>` : "") +
+        `</button></td>`);
+    });
+    const t = rowTotal(w.id);
+    cells.push(`<td class="tot">${t.nink ? fmtNink(t.nink) : ""}</td>`);
+    cells.push(`<td class="tot">${t.ot ? fmtNink(t.ot) : ""}</td>`);
+    body.push("<tr>" + cells.join("") + "</tr>");
+  });
+
+  const totals = days.map((iso) => colTotal(iso));
+  const foot = ['<tr><th class="c-name">日計（人工）</th>'];
+  totals.forEach((t, i) => {
+    foot.push(`<td class="day ${dayClass(days[i])} ${t.nink ? "" : "zero"}">${t.nink ? fmtNink(t.nink) : "―"}</td>`);
+  });
+  const sum = monthSummary();
+  foot.push(`<td class="tot">${sum.nink ? fmtNink(sum.nink) : ""}</td>`);
+  foot.push(`<td class="tot">${sum.ot ? fmtNink(sum.ot) : ""}</td></tr>`);
+  foot.push('<tr><th class="c-name">出役人数</th>');
+  totals.forEach((t, i) => {
+    foot.push(`<td class="day ${dayClass(days[i])} ${t.people ? "" : "zero"}">${t.people || "―"}</td>`);
+  });
+  foot.push(`<td class="tot" colspan="2">延べ ${sum.manDays}</td></tr>`);
+
+  wrap.innerHTML = `<table class="dz">
+    <thead>${head.join("")}</thead>
+    <tbody>${body.join("")}</tbody>
+    <tfoot>${foot.join("")}</tfoot>
+  </table>`;
+}
+
+function renderLegend() {
+  const box = $("#site-legend");
+  const mk = siteMarks();
+  if (state.siteId || mk.size < 2) { box.hidden = true; box.innerHTML = ""; return; }
+  box.hidden = false;
+  box.innerHTML = Array.from(mk.entries())
+    .map(([id, m]) => `<span><b>${esc(m)}</b>${esc(siteLabel(id))}</span>`).join("");
+}
+
+function renderChips() {
+  const s = monthSummary();
+  $("#grid-chips").innerHTML =
+    `<span class="chip">総人工 <b>${fmtNink(s.nink)}</b></span>` +
+    `<span class="chip">常用 <b>${fmtNink(s.jyoyo)}</b></span>` +
+    (s.ukeoi ? `<span class="chip ukeoi">請負 <b>${fmtNink(s.ukeoi)}</b></span>` : "") +
+    (s.ot ? `<span class="chip">残業 <b>${fmtNink(s.ot)}</b>h</span>` : "") +
+    `<span class="chip">出役延べ <b>${s.manDays}</b>人日</span>`;
+}
+
+/* ============================================================
+   マス目の入力
+   ============================================================ */
+let edit = null;   /* {date, workerId, siteId} */
+
+function openCell(date, workerId, siteId) {
+  const w = workerById(workerId);
+  if (!w) return;
+  if (!db.sites.length) {
+    notify("先に「名簿・現場」で現場を登録してください。工事番号が全帳票の突合キーになります。", "現場が未登録です");
+    return;
+  }
+  const list = entriesOf(date, workerId);
+  const pick = siteId || (list.length ? list[0].siteId : (state.siteId || lastUsedSite(workerId) || db.sites[0].id));
+  edit = { date, workerId, siteId: pick };
+
+  $("#cell-title").textContent = w.name || "（未設定）";
+  $("#cell-sub").textContent = jpDate(date) + (holidayName(date) ? "・" + holidayName(date) : "");
+
+  /* すべての現場を表示しているときは、その日に入っている現場を並べて選べるようにする */
+  const bd = $("#cell-breakdown");
+  if (!state.siteId && list.length) {
+    bd.hidden = false;
+    bd.innerHTML = list.map((e) =>
+      `<button type="button" class="bd ${e.siteId === edit.siteId ? "on" : ""}" data-s="${esc(e.siteId)}">` +
+      `${esc(siteShort(e.siteId))}<b>${esc(fmtNink(num(e.nink)))}</b></button>`).join("");
+  } else {
+    bd.hidden = true;
+    bd.innerHTML = "";
+  }
+
+  $("#cell-site-f").hidden = !!state.siteId;
+  fillSiteSelect($("#cell-site"), edit.siteId, { allowAll: false });
+
+  loadCellValues();
+  $("#cell-modal").hidden = false;
+  setTimeout(() => $("#cell-ok").focus(), 0);
+}
+
+function lastUsedSite(workerId) {
+  let best = null;
+  db.entries.forEach((e) => { if (e.workerId === workerId && (!best || e.date > best.date)) best = e; });
+  return best ? best.siteId : "";
+}
+
+function loadCellValues() {
+  const e = getEntry(edit.date, edit.workerId, edit.siteId);
+  const w = workerById(edit.workerId);
+  $("#cell-nink").value = e ? fmtNink(num(e.nink)) : "";
+  $("#cell-ot").value   = e && num(e.ot) ? fmtNink(num(e.ot)) : "";
+  $("#cell-note").value = e ? (e.note || "") : "";
+  const type = e ? (e.type || "常用") : (w && w.type ? w.type : "常用");
+  $$("#cell-type button").forEach((b) => b.classList.toggle("on", b.dataset.v === type));
+  paintPad();
+}
+
+function paintPad() {
+  const v = $("#cell-nink").value;
+  $$("#nink-pad button").forEach((b) => {
+    b.classList.toggle("on", v !== "" && num(v) === num(b.dataset.v));
+  });
+}
+
+function cellType() {
+  const on = $("#cell-type button.on");
+  return on ? on.dataset.v : "常用";
+}
+
+function saveCell() {
+  if (!edit) return;
+  putEntry(edit.date, edit.workerId, edit.siteId, {
+    nink: $("#cell-nink").value,
+    ot: $("#cell-ot").value,
+    type: cellType(),
+    note: $("#cell-note").value,
+  });
+  afterChange();
+}
+
+/** 保存してから、同じ日の前／次の作業員へ移動する */
+function moveCell(step) {
+  if (!edit) return;
+  saveCell();
+  const list = visibleWorkers();
+  const i = list.findIndex((w) => w.id === edit.workerId);
+  const nx = list[i + step];
+  if (!nx) { toast(step > 0 ? "最後の作業員です" : "最初の作業員です"); return; }
+  openCell(edit.date, nx.id, "");
+}
+
+/* ============================================================
+   日別入力（スマホ向け。押すだけで人工が入る）
+   ============================================================ */
+function renderDay() {
+  const list = $("#day-list");
+  const date = state.date;
+  const siteId = state.daySiteId;
+
+  if (!db.sites.length || !db.workers.length) {
+    list.innerHTML = `<div class="empty"><span class="big">📋</span>
+      ${!db.workers.length ? "作業員" : "現場"}がまだ登録されていません<br>
+      <button type="button" class="btn primary" id="go-master2">名簿・現場を登録する</button></div>`;
+    $("#go-master2").addEventListener("click", () => showView("master"));
+    $("#day-chips").innerHTML = "";
+    return;
+  }
+
+  const workers = sortedWorkers().filter((w) => w.active !== false || getEntry(date, w.id, siteId));
+  const rows = workers.map((w) => {
+    const e = getEntry(date, w.id, siteId);
+    const nink = e ? num(e.nink) : null;
+    const type = e ? (e.type || "常用") : (w.type || "常用");
+    const quick = DAY_QUICK.map((q) =>
+      `<button type="button" class="qb ${q === 0 ? "zero" : ""} ${nink !== null && nink === q ? "on" : ""}" ` +
+      `data-w="${esc(w.id)}" data-q="${q}">${q === 0 ? "休" : fmtNink(q)}</button>`).join("");
+    return `<div class="day-row ${e ? "on" : ""}" data-w="${esc(w.id)}">
+      <div class="who"><div class="nm">${esc(w.name || "（未設定）")}</div>
+        <div class="og">${esc([w.org, w.role].filter(Boolean).join("・") || "　")}</div></div>
+      <div class="quick">${quick}</div>
+      <div class="more">
+        <div class="f"><label>人工</label>
+          <input type="number" inputmode="decimal" step="0.25" min="0" data-k="nink" data-w="${esc(w.id)}"
+                 value="${e ? esc(fmtNink(num(e.nink))) : ""}"></div>
+        <div class="f"><label>残業(h)</label>
+          <input type="number" inputmode="decimal" step="0.25" min="0" data-k="ot" data-w="${esc(w.id)}"
+                 value="${e && num(e.ot) ? esc(fmtNink(num(e.ot))) : ""}"></div>
+        <div class="f"><label>区分</label>
+          <select data-k="type" data-w="${esc(w.id)}">
+            ${WORK_TYPES.map((t) => `<option value="${t}"${t === type ? " selected" : ""}>${t}</option>`).join("")}
+          </select></div>
+        <div class="f" style="flex:2"><label>備考</label>
+          <input type="text" data-k="note" data-w="${esc(w.id)}" value="${e ? esc(e.note || "") : ""}"></div>
+      </div>
+    </div>`;
+  });
+  list.innerHTML = rows.join("");
+
+  /* 日別入力は現場を 1 つに絞っているので、その現場ぶんだけを数える */
+  let nink = 0, ot = 0, people = 0;
+  workers.forEach((w) => {
+    const e = getEntry(date, w.id, siteId);
+    if (!e) return;
+    nink += num(e.nink); ot += num(e.ot);
+    if (num(e.nink) > 0) people++;
+  });
+  $("#day-chips").innerHTML =
+    `<span class="chip">この日の人工 <b>${fmtNink(nink)}</b></span>` +
+    `<span class="chip">出役 <b>${people}</b>名</span>` +
+    (ot ? `<span class="chip">残業 <b>${fmtNink(ot)}</b>h</span>` : "");
+}
+
+function dayPut(workerId, patch) {
+  const cur = getEntry(state.date, workerId, state.daySiteId);
+  const w = workerById(workerId);
+  const base = {
+    nink: cur ? cur.nink : "",
+    ot: cur ? cur.ot : "",
+    type: cur ? cur.type : (w && w.type ? w.type : "常用"),
+    note: cur ? cur.note : "",
+  };
+  putEntry(state.date, workerId, state.daySiteId, Object.assign(base, patch));
+}
+
+/** 同じ現場で直近に出面のある日をそのまま写す */
+async function copyPrevDay() {
+  const siteId = state.daySiteId;
+  if (!siteId) return;
+  const dates = new Set();
+  db.entries.forEach((e) => { if (e.siteId === siteId && e.date < state.date) dates.add(e.date); });
+  if (!dates.size) { notify("この現場には、これより前の出面がまだありません。", "コピーできません"); return; }
+  const src = Array.from(dates).sort().pop();
+  const rows = db.entries.filter((e) => e.siteId === siteId && e.date === src);
+  const ok = await ask(`${jpDate(src)} の出面 ${rows.length} 件を ${jpDate(state.date)} に写します。\n` +
+    `同じ作業員のマスはすべて上書きされます。`, { title: "前回の出面をコピー", okText: "コピーする" });
+  if (!ok) return;
+  rows.forEach((e) => putEntry(state.date, e.workerId, siteId, { nink: e.nink, ot: e.ot, type: e.type, note: e.note }));
+  afterChange();
+  toast(`${rows.length} 件をコピーしました`);
+}
+
+async function clearDay() {
+  const rows = db.entries.filter((e) => e.date === state.date && e.siteId === state.daySiteId);
+  if (!rows.length) { toast("消すデータがありません"); return; }
+  const ok = await ask(`${jpDate(state.date)}・${siteLabel(state.daySiteId)} の出面 ${rows.length} 件を消します。`,
+    { title: "この日を消す", okText: "消す", danger: true });
+  if (!ok) return;
+  rows.forEach((e) => delEntry(e.date, e.workerId, e.siteId));
+  afterChange();
+  toast("消しました");
+}
+
+/* ============================================================
+   マスタ（作業員名簿・現場）
+   ============================================================ */
+function renderWorkers() {
+  const tb = $("#tbl-workers tbody");
+  tb.innerHTML = sortedWorkers().map((w, i) => `
+    <tr data-id="${esc(w.id)}">
+      <td class="rownum">${i + 1}</td>
+      <td><input type="text" data-m="worker" data-k="name" value="${esc(w.name || "")}" placeholder="氏名"></td>
+      <td><input type="text" data-m="worker" data-k="org" value="${esc(w.org || "")}" placeholder="所属会社"></td>
+      <td><input type="text" data-m="worker" data-k="role" value="${esc(w.role || "")}" placeholder="職種"></td>
+      <td><select data-m="worker" data-k="type">
+        ${WORK_TYPES.map((t) => `<option value="${t}"${(w.type || "常用") === t ? " selected" : ""}>${t}</option>`).join("")}
+      </select></td>
+      <td class="num"><input type="number" data-m="worker" data-k="sort" value="${esc(w.sort == null ? "" : w.sort)}" step="1"></td>
+      <td class="ctr"><input type="checkbox" data-m="worker" data-k="active" ${w.active !== false ? "checked" : ""}
+          style="width:20px;height:20px;accent-color:var(--accent)"></td>
+      <td class="rowdel"><button type="button" data-del="worker" title="削除">×</button></td>
+    </tr>`).join("");
+  $("#worker-count").textContent = db.workers.length;
+}
+
+function renderSites() {
+  const tb = $("#tbl-sites tbody");
+  tb.innerHTML = db.sites.map((s, i) => `
+    <tr data-id="${esc(s.id)}">
+      <td class="rownum">${i + 1}</td>
+      <td><input type="text" data-m="site" data-k="projectNo" value="${esc(s.projectNo || "")}" placeholder="K-2026-001"></td>
+      <td><input type="text" data-m="site" data-k="projectName" value="${esc(s.projectName || "")}" placeholder="工事名"></td>
+      <td><input type="text" data-m="site" data-k="client" value="${esc(s.client || "")}" placeholder="元請 / 発注者"></td>
+      <td><select data-m="site" data-k="closed">
+        <option value=""${s.closed ? "" : " selected"}>進行中</option>
+        <option value="1"${s.closed ? " selected" : ""}>完了</option>
+      </select></td>
+      <td class="rowdel"><button type="button" data-del="site" title="削除">×</button></td>
+    </tr>`).join("");
+  $("#site-count").textContent = db.sites.length;
+}
+
+function bindMasterEvents() {
+  const onInput = (ev) => {
+    const el = ev.target;
+    const kind = el.dataset.m;
+    if (!kind) return;
+    const id = el.closest("tr").dataset.id;
+    const obj = kind === "worker" ? workerById(id) : siteById(id);
+    if (!obj) return;
+    const k = el.dataset.k;
+    if (k === "active") obj.active = el.checked;
+    else if (k === "closed") obj.closed = el.value === "1";
+    else obj[k] = el.value.trim();
+    persist();
+    if (kind === "site") refreshSelectors();
+  };
+  $("#tbl-workers").addEventListener("input", onInput);
+  $("#tbl-workers").addEventListener("change", onInput);
+  $("#tbl-sites").addEventListener("input", onInput);
+  $("#tbl-sites").addEventListener("change", onInput);
+
+  const onDel = async (ev) => {
+    const btn = ev.target.closest("[data-del]");
+    if (!btn) return;
+    const kind = btn.dataset.del;
+    const id = btn.closest("tr").dataset.id;
+    if (kind === "worker") {
+      const w = workerById(id);
+      const used = db.entries.filter((e) => e.workerId === id).length;
+      const ok = await ask(
+        used
+          ? `${w.name || "この作業員"} には出面が ${used} 件あります。\n削除すると出面も一緒に消えます。\n` +
+            `辞めただけなら「在籍」のチェックを外すだけにしてください。`
+          : `${w.name || "この作業員"} を名簿から削除します。`,
+        { title: "作業員の削除", okText: "削除する", danger: true });
+      if (!ok) return;
+      db.entries = db.entries.filter((e) => e.workerId !== id);
+      db.workers = db.workers.filter((x) => x.id !== id);
+    } else {
+      const s = siteById(id);
+      const used = db.entries.filter((e) => e.siteId === id).length;
+      const ok = await ask(
+        used
+          ? `${siteLabel(id)} には出面が ${used} 件あります。\n削除すると出面も一緒に消えます。\n` +
+            `終わった現場なら「完了」にするだけにしてください。`
+          : `${siteLabel(id)} を削除します。`,
+        { title: "現場の削除", okText: "削除する", danger: true });
+      if (!ok) return;
+      db.entries = db.entries.filter((e) => e.siteId !== id);
+      db.sites = db.sites.filter((x) => x.id !== id);
+      if (state.siteId === id) state.siteId = "";
+      if (state.daySiteId === id) state.daySiteId = "";
+    }
+    reindex();
+    persist(true);
+    renderWorkers(); renderSites(); refreshSelectors(); afterChange();
+    toast("削除しました");
+  };
+  $("#tbl-workers").addEventListener("click", onDel);
+  $("#tbl-sites").addEventListener("click", onDel);
+
+  $("#add-worker").addEventListener("click", () => {
+    const maxSort = db.workers.reduce((a, w) => Math.max(a, num(w.sort)), 0);
+    db.workers.push({ id: uid(), name: "", org: "", role: "", type: "常用", sort: maxSort + 10, active: true });
+    persist();
+    renderWorkers();
+    const last = $("#tbl-workers tbody tr:last-child input");
+    if (last) last.focus();
+  });
+  $("#add-site").addEventListener("click", () => {
+    db.sites.push({ id: uid(), projectNo: "", projectName: "", client: "", closed: false });
+    persist();
+    renderSites(); refreshSelectors();
+    const last = $("#tbl-sites tbody tr:last-child input");
+    if (last) last.focus();
+  });
+
+  $("#m-org").addEventListener("input", (e) => { db.meta.orgName = e.target.value; persist(); });
+  $("#m-to").addEventListener("input", (e) => { db.meta.submitTo = e.target.value; persist(); });
+}
+
+/* ============================================================
+   注意の表示
+   ============================================================ */
+function renderAlerts() {
+  const box = $("#alerts");
+  const msgs = [];
+  if (!storageOK) {
+    msgs.push(['err', "この表示ではブラウザに保存できません。画面を閉じると入力が消えます。" +
+      "ホーム画面に追加したアイコンから開くか、通常のブラウザで開いてください。"]);
+  }
+  /* 1 人 1 日で人工が 2 を超えるのは入れ間違いのことが多い */
+  const over = new Map();
+  db.entries.forEach((e) => {
+    if (ymOf(e.date) !== state.ym) return;
+    const k = e.date + "|" + e.workerId;
+    over.set(k, (over.get(k) || 0) + num(e.nink));
+  });
+  const bad = Array.from(over.entries()).filter(([, v]) => v > 2)
+    .map(([k]) => { const [d, w] = k.split("|"); const o = workerById(w); return `${+d.slice(8)}日 ${o ? o.name : ""}`; });
+  if (bad.length) {
+    msgs.push(['', `1 日の人工が 2 を超えている行があります：${bad.slice(0, 6).join(" / ")}` +
+      (bad.length > 6 ? ` ほか ${bad.length - 6} 件` : "")]);
+  }
+  box.innerHTML = msgs.map(([cls, m]) => `<div class="alert ${cls}">${esc(m)}</div>`).join("");
+}
+
+/* ============================================================
+   出力（CSV / JSON）
+   ============================================================ */
+function download(filename, content, mime) {
+  const blob = new Blob([content], { type: mime || "text/plain;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+const csvCell = (v) => {
+  const s = String(v == null ? "" : v);
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+};
+const toCSV = (rows) => "﻿" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
+
+const scopeLabel = () => state.siteId ? siteLabel(state.siteId) : "全現場";
+function fileTag() {
+  const s = state.siteId ? siteById(state.siteId) : null;
+  return state.ym.replace("-", "") + "_" + (s ? (s.projectNo || s.projectName || "現場") : "全現場");
+}
+
+function exportMatrix() {
+  const ym = state.ym, n = daysIn(ym);
+  const workers = visibleWorkers();
+  if (!workers.length) { toast("出力対象がありません"); return; }
+  const days = []; for (let d = 1; d <= n; d++) days.push(dateOf(ym, d));
+
+  const rows = [];
+  rows.push(["出面表", ym.replace("-", "年") + "月", scopeLabel(), db.meta.orgName || ""]);
+  rows.push([]);
+  rows.push(["氏名", "所属会社", "職種"].concat(days.map((d) => +d.slice(8))).concat(["人工計", "残業計", "出勤日数"]));
+  rows.push(["", "", ""].concat(days.map((d) => WDAY[wdayOf(d)])).concat(["", "", ""]));
+  workers.forEach((w) => {
+    const cells = days.map((iso) => {
+      const sum = entriesOf(iso, w.id).reduce((a, e) => a + num(e.nink), 0);
+      return sum ? fmtNink(sum) : "";
+    });
+    const t = rowTotal(w.id);
+    rows.push([w.name || "", w.org || "", w.role || ""].concat(cells)
+      .concat([t.nink ? fmtNink(t.nink) : "", t.ot ? fmtNink(t.ot) : "", t.days || ""]));
+  });
+  const s = monthSummary();
+  rows.push(["日計", "", ""].concat(days.map((d) => { const t = colTotal(d); return t.nink ? fmtNink(t.nink) : ""; }))
+    .concat([fmtNink(s.nink), s.ot ? fmtNink(s.ot) : "", s.manDays]));
+  rows.push(["出役人数", "", ""].concat(days.map((d) => colTotal(d).people || "")).concat(["", "", ""]));
+
+  download(`出面表_${fileTag()}.csv`, toCSV(rows), "text/csv;charset=utf-8");
+  toast(`${workers.length} 名分を出力しました`);
+}
+
+function exportDetail() {
+  const rows = [["日付", "曜日", "工事番号", "工事名", "元請/発注者", "氏名", "所属会社", "職種", "区分", "人工", "残業(h)", "備考"]];
+  db.entries
+    .filter((e) => ymOf(e.date) === state.ym && (!state.siteId || e.siteId === state.siteId))
+    .sort((a, b) => a.date.localeCompare(b.date) || String(a.workerId).localeCompare(String(b.workerId)))
+    .forEach((e) => {
+      const w = workerById(e.workerId) || {};
+      const s = siteById(e.siteId) || {};
+      rows.push([e.date, WDAY[wdayOf(e.date)], s.projectNo || "", s.projectName || "", s.client || "",
+        w.name || "", w.org || "", w.role || "", e.type || "常用",
+        fmtNink(num(e.nink)), num(e.ot) ? fmtNink(num(e.ot)) : "", e.note || ""]);
+    });
+  if (rows.length === 1) { toast("出力対象がありません"); return; }
+  download(`出面明細_${fileTag()}.csv`, toCSV(rows), "text/csv;charset=utf-8");
+  toast(`${rows.length - 1} 行を出力しました`);
+}
+
+function exportJSON() {
+  download(`出面表バックアップ_${todayISO()}.json`,
+    JSON.stringify({ app: "attendance", version: 1, savedAt: new Date().toISOString(), data: db }, null, 2),
+    "application/json");
+  toast("バックアップを書き出しました");
+}
+
+async function importJSON(file) {
+  const text = await file.text();
+  let o;
+  try { o = JSON.parse(text); } catch (e) { notify("JSON として読めませんでした。", "取り込めません"); return; }
+  const d = o && o.data ? o.data : o;
+  if (!d || !Array.isArray(d.workers) || !Array.isArray(d.entries)) {
+    notify("出面表のバックアップではないようです。", "取り込めません");
+    return;
+  }
+  const ok = await ask(
+    `作業員 ${d.workers.length} 名 / 現場 ${(d.sites || []).length} 件 / 出面 ${d.entries.length} 件を読み込みます。\n` +
+    `今この端末に入っているデータはすべて置き換わります。`,
+    { title: "バックアップの読み込み", okText: "置き換える", danger: true });
+  if (!ok) return;
+  db = {
+    meta: Object.assign({ orgName: "", submitTo: "" }, d.meta || {}),
+    workers: d.workers, sites: d.sites || [], entries: d.entries,
+  };
+  reindex();
+  persist(true);
+  boot(false);
+  toast("読み込みました");
+}
+
+/* ============================================================
+   作業日報からの取り込み
+   ============================================================ */
+/** 取り込みの共通処理。recs は {date, projectNo, projectName, client, name, org, role, type, nink, ot} の配列 */
+async function applyRecords(recs, source) {
+  if (!recs.length) { notify(`取り込める人工データが見つかりませんでした。（${source}）`, "取り込めません"); return; }
+
+  const newWorkers = [], newSites = [];
+  const findSite = (no, name) => {
+    const key = (no || "").trim(), nm = (name || "").trim();
+    let s = key ? db.sites.find((x) => (x.projectNo || "").trim() === key) : null;
+    if (!s && !key && nm) s = db.sites.find((x) => (x.projectName || "").trim() === nm);
+    if (s) return s;
+    s = { id: uid(), projectNo: key, projectName: nm, client: "", closed: false };
+    db.sites.push(s); newSites.push(s);
+    return s;
+  };
+  const findWorker = (name, org, role) => {
+    const nm = (name || "").trim(), og = (org || "").trim();
+    let w = db.workers.find((x) => (x.name || "").trim() === nm && (x.org || "").trim() === og);
+    if (!w) w = db.workers.find((x) => (x.name || "").trim() === nm);
+    if (w) return w;
+    const maxSort = db.workers.reduce((a, x) => Math.max(a, num(x.sort)), 0);
+    w = { id: uid(), name: nm, org: og, role: (role || "").trim(), type: "常用", sort: maxSort + 10, active: true };
+    db.workers.push(w); newWorkers.push(w);
+    return w;
+  };
+
+  /* 先に当たり判定だけして、上書き件数を伝えてから実行する */
+  const plan = [];
+  const clients = [];
+  let overwrite = 0;
+  const snapSites = db.sites.length, snapWorkers = db.workers.length;
+  recs.forEach((r) => {
+    const s = findSite(r.projectNo, r.projectName);
+    const w = findWorker(r.name, r.org, r.role);
+    if (r.client && !s.client) clients.push([s, r.client]);
+    const cur = getEntry(r.date, w.id, s.id);
+    if (cur && (num(cur.nink) !== num(r.nink) || num(cur.ot) !== num(r.ot))) overwrite++;
+    plan.push({ date: r.date, workerId: w.id, siteId: s.id, nink: r.nink, ot: r.ot, type: r.type, note: r.note });
+  });
+
+  const ok = await ask(
+    `${source}から ${plan.length} 件を取り込みます。\n\n` +
+    `・新しく登録される作業員：${db.workers.length - snapWorkers} 名\n` +
+    `・新しく登録される現場：${db.sites.length - snapSites} 件\n` +
+    `・すでに入っている値を上書き：${overwrite} 件`,
+    { title: "作業日報から取り込む", okText: "取り込む" });
+  if (!ok) {
+    /* 取りやめたら、下見のときに増やしたマスタを元に戻す */
+    db.workers = db.workers.slice(0, snapWorkers);
+    db.sites = db.sites.slice(0, snapSites);
+    return;
+  }
+
+  clients.forEach(([s, c]) => { if (!s.client) s.client = c; });
+  plan.forEach((p) => putEntry(p.date, p.workerId, p.siteId, p));
+  persist(true);
+  renderWorkers(); renderSites(); refreshSelectors(); afterChange();
+  toast(`${plan.length} 件を取り込みました`);
+}
+
+function importFromReports() {
+  let reports = [];
+  try { reports = JSON.parse(localStorage.getItem(REPORT_KEY) || "[]"); } catch (e) { reports = []; }
+  if (!Array.isArray(reports) || !reports.length) {
+    notify(
+      "この端末の作業日報アプリにデータが見つかりませんでした。\n\n" +
+      "日報アプリと出面表は、同じブラウザ・同じ公開 URL で開いたときだけデータを共有できます。\n" +
+      "別の端末で入力した日報は、日報アプリで「人工集計 CSV」を書き出してから読み込んでください。",
+      "日報が見つかりません");
+    return;
+  }
+  const onlyMonth = $("#imp-range").value === "month";
+  const recs = [];
+  reports.forEach((r) => {
+    if (!r || !r.date) return;
+    if (onlyMonth && ymOf(r.date) !== state.ym) return;
+    (r.workers || []).forEach((w) => {
+      if (!w || !(w.name || "").trim()) return;
+      if (!num(w.nink) && !num(w.ot)) return;
+      recs.push({
+        date: r.date, projectNo: r.projectNo, projectName: r.projectName, client: r.client,
+        name: w.name, org: w.org, role: w.role, type: w.type || "常用",
+        nink: w.nink, ot: w.ot, note: (w.note || "").trim(),
+      });
+    });
+  });
+  applyRecords(recs, onlyMonth ? `${state.ym.replace("-", "年")}月の日報` : "この端末の日報");
+}
+
+/** ごく素朴な CSV パーサ。引用符と改行入りセルまで扱えれば足りる */
+function parseCSV(text) {
+  const rows = [];
+  let row = [], cell = "", q = false;
+  text = text.replace(/^﻿/, "");
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (q) {
+      if (c === '"') { if (text[i + 1] === '"') { cell += '"'; i++; } else q = false; }
+      else cell += c;
+    } else if (c === '"') q = true;
+    else if (c === ",") { row.push(cell); cell = ""; }
+    else if (c === "\n") { row.push(cell); rows.push(row); row = []; cell = ""; }
+    else if (c !== "\r") cell += c;
+  }
+  if (cell !== "" || row.length) { row.push(cell); rows.push(row); }
+  return rows.filter((r) => r.some((v) => String(v).trim() !== ""));
+}
+
+async function importCSV(file) {
+  const rows = parseCSV(await file.text());
+  if (rows.length < 2) { notify("中身が空の CSV です。", "取り込めません"); return; }
+  const head = rows[0].map((h) => h.trim());
+  const at = (names) => { for (const n of names) { const i = head.indexOf(n); if (i >= 0) return i; } return -1; };
+  const iDate = at(["作業日", "日付"]);
+  const iName = at(["氏名", "名前", "作業員"]);
+  const iNink = at(["人工"]);
+  if (iDate < 0 || iName < 0 || iNink < 0) {
+    notify("「作業日」「氏名」「人工」の列が見つかりません。\n" +
+      "日報アプリの「人工集計 CSV」をそのまま選んでください。", "取り込めません");
+    return;
+  }
+  const iNo = at(["工事番号"]), iPn = at(["工事名"]), iCl = at(["元請/発注者", "元請", "発注者"]);
+  const iOrg = at(["所属会社", "会社"]), iRole = at(["職種"]), iType = at(["区分"]);
+  const iOt = at(["残業(h)", "残業"]), iNote = at(["備考"]);
+  const get = (r, i) => (i >= 0 && r[i] != null ? String(r[i]).trim() : "");
+
+  const onlyMonth = $("#imp-range").value === "month";
+  const recs = [];
+  rows.slice(1).forEach((r) => {
+    const date = get(r, iDate);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return;
+    if (onlyMonth && ymOf(date) !== state.ym) return;
+    const name = get(r, iName);
+    if (!name) return;
+    if (!num(get(r, iNink)) && !num(get(r, iOt))) return;
+    recs.push({
+      date, projectNo: get(r, iNo), projectName: get(r, iPn), client: get(r, iCl),
+      name, org: get(r, iOrg), role: get(r, iRole),
+      type: get(r, iType) === "請負" ? "請負" : "常用",
+      nink: get(r, iNink), ot: get(r, iOt), note: get(r, iNote),
+    });
+  });
+  applyRecords(recs, file.name);
+}
+
+/* ============================================================
+   印刷（A4 横）
+   ============================================================ */
+function buildPrint() {
+  const ym = state.ym, n = daysIn(ym);
+  const workers = visibleWorkers();
+  const days = []; for (let d = 1; d <= n; d++) days.push(dateOf(ym, d));
+  const s = monthSummary();
+  const [y, m] = ym.split("-");
+
+  const head = ['<tr><th class="p-nm">氏　名</th><th class="p-og">所属</th>'];
+  days.forEach((iso) => head.push(`<th class="${dayClass(iso) === "sun" ? "p-sun" : ""}">${+iso.slice(8)}</th>`));
+  head.push('<th class="p-tot">人工計</th><th class="p-tot">残業</th></tr>');
+  head.push('<tr><th class="p-nm"></th><th class="p-og"></th>');
+  days.forEach((iso) => head.push(`<th class="${dayClass(iso) === "sun" ? "p-sun" : ""}">${WDAY[wdayOf(iso)]}</th>`));
+  head.push('<th class="p-tot"></th><th class="p-tot"></th></tr>');
+
+  const body = workers.map((w) => {
+    const cells = days.map((iso) => {
+      const sum = entriesOf(iso, w.id).reduce((a, e) => a + num(e.nink), 0);
+      return `<td class="${dayClass(iso) === "sun" ? "p-sun" : ""}">${sum ? esc(fmtNink(sum)) : ""}</td>`;
+    }).join("");
+    const t = rowTotal(w.id);
+    return `<tr><td class="p-nm">${esc(w.name || "")}</td><td class="p-og">${esc(w.org || "")}</td>${cells}` +
+      `<td class="p-tot">${t.nink ? esc(fmtNink(t.nink)) : ""}</td>` +
+      `<td class="p-tot">${t.ot ? esc(fmtNink(t.ot)) : ""}</td></tr>`;
+  }).join("");
+
+  const foot = ['<tr><td class="p-nm">日　計</td><td class="p-og"></td>'];
+  days.forEach((iso) => { const t = colTotal(iso); foot.push(`<td>${t.nink ? esc(fmtNink(t.nink)) : ""}</td>`); });
+  foot.push(`<td class="p-tot">${esc(fmtNink(s.nink))}</td><td class="p-tot">${s.ot ? esc(fmtNink(s.ot)) : ""}</td></tr>`);
+  foot.push('<tr><td class="p-nm">出役人数</td><td class="p-og"></td>');
+  days.forEach((iso) => { const t = colTotal(iso); foot.push(`<td>${t.people || ""}</td>`); });
+  foot.push(`<td class="p-tot" colspan="2">延べ ${s.manDays} 人日</td></tr>`);
+
+  const site = state.siteId ? siteById(state.siteId) : null;
+
+  $("#print-area").innerHTML = `
+    <div class="p-title">出　面　表</div>
+    <div class="p-head">
+      <div>${esc(+y)} 年 ${esc(+m)} 月分</div>
+      <div>工事番号：${esc(site ? (site.projectNo || "―") : "全現場")}</div>
+      <div>工事名：${esc(site ? (site.projectName || "―") : "―")}</div>
+      <div>${esc(db.meta.submitTo || "")}</div>
+      <div>${esc(db.meta.orgName || "")}</div>
+    </div>
+    <table>
+      <thead>${head.join("")}</thead>
+      <tbody>${body}</tbody>
+      <tfoot>${foot.join("")}</tfoot>
+    </table>
+    <div class="p-foot">
+      <span>常用 ${esc(fmtNink(s.jyoyo))} 人工 ／ 請負 ${esc(fmtNink(s.ukeoi))} 人工</span>
+      <span>出力日 ${esc(todayISO())}</span>
+    </div>
+    <table class="p-sign">
+      <tr><th style="width:20%">作成者</th><th style="width:30%">　</th>
+          <th style="width:20%">確認者</th><th style="width:30%">　</th></tr>
+      <tr><td></td><td></td><td></td><td></td></tr>
+    </table>`;
+}
+
+/* ============================================================
+   ビュー切替・再描画
+   ============================================================ */
+function showView(v) {
+  state.view = v;
+  ["grid", "day", "master", "data"].forEach((k) => {
+    $("#view-" + k).hidden = k !== v;
+    $("#tab-" + k).setAttribute("aria-selected", String(k === v));
+  });
+  if (v === "grid") renderGrid();
+  if (v === "day") renderDay();
+  if (v === "master") { renderWorkers(); renderSites(); $("#m-org").value = db.meta.orgName || ""; $("#m-to").value = db.meta.submitTo || ""; }
+  window.scrollTo(0, 0);
+}
+
+/** データを触ったあとの共通の再描画 */
+function afterChange() {
+  renderAlerts();
+  renderChips();
+  if (state.view === "grid") renderGrid();
+  else if (state.view === "day") renderDay();
+}
+
+/* ============================================================
+   イベント
+   ============================================================ */
+function bindEvents() {
+  ["grid", "day", "master", "data"].forEach((k) => {
+    $("#tab-" + k).addEventListener("click", () => showView(k));
+  });
+
+  /* --- 月間表 --- */
+  $("#ym").addEventListener("change", (e) => {
+    if (!e.target.value) return;
+    state.ym = e.target.value;
+    renderAlerts(); renderGrid();
+  });
+  $("#ym-prev").addEventListener("click", () => { state.ym = shiftMonth(state.ym, -1); $("#ym").value = state.ym; renderAlerts(); renderGrid(); });
+  $("#ym-next").addEventListener("click", () => { state.ym = shiftMonth(state.ym, 1); $("#ym").value = state.ym; renderAlerts(); renderGrid(); });
+  $("#site").addEventListener("change", (e) => { state.siteId = e.target.value; renderGrid(); });
+
+  $("#grid-wrap").addEventListener("click", (ev) => {
+    const b = ev.target.closest(".cell");
+    if (!b) return;
+    openCell(b.dataset.d, b.dataset.w, "");
+  });
+
+  /* --- マス目のモーダル --- */
+  $("#nink-pad").innerHTML = NINK_PAD.map((v) =>
+    `<button type="button" data-v="${v}">${v === 0 ? "休" : fmtNink(v)}</button>`).join("");
+  $("#nink-pad").addEventListener("click", (ev) => {
+    const b = ev.target.closest("button");
+    if (!b) return;
+    $("#cell-nink").value = b.dataset.v === "0" ? "0" : fmtNink(num(b.dataset.v));
+    paintPad();
+  });
+  $("#cell-nink").addEventListener("input", paintPad);
+  $("#cell-type").addEventListener("click", (ev) => {
+    const b = ev.target.closest("button");
+    if (!b) return;
+    $$("#cell-type button").forEach((x) => x.classList.toggle("on", x === b));
+  });
+  $("#cell-site").addEventListener("change", (e) => {
+    if (!edit) return;
+    saveCell();
+    edit.siteId = e.target.value;
+    loadCellValues();
+  });
+  $("#cell-breakdown").addEventListener("click", (ev) => {
+    const b = ev.target.closest(".bd");
+    if (!b || !edit) return;
+    saveCell();
+    edit.siteId = b.dataset.s;
+    $("#cell-site").value = edit.siteId;
+    $$("#cell-breakdown .bd").forEach((x) => x.classList.toggle("on", x === b));
+    loadCellValues();
+  });
+  $("#cell-ok").addEventListener("click", () => { saveCell(); $("#cell-modal").hidden = true; edit = null; });
+  $("#cell-close").addEventListener("click", () => { $("#cell-modal").hidden = true; edit = null; });
+  $("#cell-del").addEventListener("click", () => {
+    if (!edit) return;
+    delEntry(edit.date, edit.workerId, edit.siteId);
+    $("#cell-modal").hidden = true; edit = null;
+    afterChange();
+    toast("消しました");
+  });
+  $("#cell-prev").addEventListener("click", () => moveCell(-1));
+  $("#cell-next").addEventListener("click", () => moveCell(1));
+  $("#cell-modal").addEventListener("click", (ev) => {
+    if (ev.target.id === "cell-modal") { saveCell(); $("#cell-modal").hidden = true; edit = null; }
+  });
+
+  /* --- 日別入力 --- */
+  $("#d-date").addEventListener("change", (e) => { if (e.target.value) { state.date = e.target.value; renderDay(); } });
+  $("#d-prev").addEventListener("click", () => { state.date = shiftDate(state.date, -1); $("#d-date").value = state.date; renderDay(); });
+  $("#d-next").addEventListener("click", () => { state.date = shiftDate(state.date, 1); $("#d-date").value = state.date; renderDay(); });
+  $("#d-site").addEventListener("change", (e) => { state.daySiteId = e.target.value; renderDay(); });
+  $("#d-copy").addEventListener("click", copyPrevDay);
+  $("#d-clear").addEventListener("click", clearDay);
+
+  $("#day-list").addEventListener("click", (ev) => {
+    const b = ev.target.closest(".qb");
+    if (!b) return;
+    const cur = getEntry(state.date, b.dataset.w, state.daySiteId);
+    const q = num(b.dataset.q);
+    if (b.classList.contains("on")) {
+      /* 光っているボタンをもう一度押したら取り消し */
+      delEntry(state.date, b.dataset.w, state.daySiteId);
+    } else if (q === 0) {
+      /* 「休」は人工 0 の行として残す。出面表の空欄（未入力）と区別するため */
+      dayPut(b.dataset.w, { nink: 0, note: (cur && cur.note) || "休み" });
+    } else {
+      dayPut(b.dataset.w, { nink: q });
+    }
+    renderDay();
+  });
+  $("#day-list").addEventListener("change", (ev) => {
+    const el = ev.target;
+    if (!el.dataset.k) return;
+    dayPut(el.dataset.w, { [el.dataset.k]: el.value });
+    renderDay();
+  });
+
+  /* --- 出力・取込 --- */
+  $("#ex-matrix").addEventListener("click", exportMatrix);
+  $("#ex-detail").addEventListener("click", exportDetail);
+  $("#ex-json").addEventListener("click", exportJSON);
+  $("#imp-local").addEventListener("click", importFromReports);
+  $("#imp-csv").addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    if (f) importCSV(f);
+    e.target.value = "";
+  });
+  $("#imp-json").addEventListener("change", (e) => {
+    const f = e.target.files[0];
+    if (f) importJSON(f);
+    e.target.value = "";
+  });
+  $("#wipe").addEventListener("click", async () => {
+    const ok = await ask("この端末に保存された出面表のデータ（名簿・現場・出面）をすべて消します。\nこの操作は取り消せません。",
+      { title: "全部消す", okText: "全部消す", danger: true });
+    if (!ok) return;
+    db = { meta: { orgName: "", submitTo: "" }, workers: [], sites: [], entries: [] };
+    reindex();
+    persist(true);
+    boot(false);
+    toast("消しました");
+  });
+
+  /* --- 印刷 --- */
+  $("#btn-print").addEventListener("click", () => {
+    if (!visibleWorkers().length) { toast("印刷できる出面がありません"); return; }
+    buildPrint();
+    setTimeout(() => window.print(), 60);
+  });
+  window.addEventListener("beforeprint", buildPrint);
+
+  /* --- 確認ダイアログ --- */
+  $("#ask-ok").addEventListener("click", () => closeAsk(true));
+  $("#ask-cancel").addEventListener("click", () => closeAsk(false));
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Escape") return;
+    if (!$("#ask-modal").hidden) closeAsk(false);
+    else if (!$("#cell-modal").hidden) { saveCell(); $("#cell-modal").hidden = true; edit = null; }
+  });
+}
+
+/* ============================================================
+   アプリとして開けるようにする（ホーム画面に追加）
+   ============================================================ */
+function setupInstall() {
+  let deferred = null;
+  const btn = $("#btn-install");
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferred = e;
+    btn.hidden = false;
+  });
+  btn.addEventListener("click", async () => {
+    if (deferred) {
+      deferred.prompt();
+      await deferred.userChoice;
+      deferred = null;
+      btn.hidden = true;
+      return;
+    }
+    notify(
+      "iPhone / iPad の場合：\n" +
+      "　画面下の「共有」→「ホーム画面に追加」\n\n" +
+      "Android の場合：\n" +
+      "　メニュー（︙）→「アプリをインストール」または「ホーム画面に追加」\n\n" +
+      "追加したアイコンから開くと、アドレスバーのない全画面のアプリとして使えます。",
+      "ホーム画面に追加する");
+  });
+
+  /* すでにアプリとして開いている、または対応していない環境では案内ボタンだけ出す */
+  const standalone = window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+  const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+  if (!standalone && iOS) btn.hidden = false;
+
+  if ("serviceWorker" in navigator && location.protocol === "https:") {
+    navigator.serviceWorker.register("sw.js").catch(() => { /* 圏外・未配置なら黙って諦める */ });
+  }
+}
+
+/* ============================================================
+   初期化
+   ============================================================ */
+function boot(first) {
+  reindex();
+  refreshSelectors();
+  renderAlerts();
+  showView(state.view);
+  if (first) {
+    /* まっさらな端末では、まず名簿を作ってもらう */
+    if (!db.workers.length && !db.sites.length) showView("master");
+  }
+}
+
+loadAll();
+bindEvents();
+bindMasterEvents();
+setupInstall();
+boot(true);
+</script>
+</body>
+</html>

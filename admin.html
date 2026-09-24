@@ -137,10 +137,6 @@ table.tbl tr.total-row td{background:var(--panel-2);font-weight:700;text-align:r
   border-left:3px solid var(--accent);padding-left:7px;
 }
 .tbl-foot + h3.sub{margin-top:16px}
-.btn-map{
-  background:var(--panel);color:var(--accent);border:1px solid var(--line-strong);
-  padding:6px 14px;border-radius:var(--radius);cursor:pointer;
-}
 table.tbl td input[readonly]{background:var(--panel-2);color:var(--text);font-weight:700;cursor:default}
 .tbl-foot{display:flex;gap:8px;align-items:center;flex-wrap:wrap;padding:8px 0 0}
 .btn-add{
@@ -301,7 +297,7 @@ body.dirty .dirty-dot{display:block}
     display:block;text-align:left;border:1px solid var(--line);border-radius:8px;padding:8px 10px;
   }
   table.tbl tfoot tr.total-row td::before{content:none}
-  .btn-add,.btn-map{width:100%;padding:12px}
+  .btn-add{width:100%;padding:12px}
   .sum-chips{margin-left:0;width:100%}
 
   /* 一覧は横スクロールのまま。指で掴める幅を確保する */
@@ -488,60 +484,6 @@ body.dirty .dirty-dot{display:block}
   </section>
 
   <section class="card">
-    <h2>移動・交通費 <span class="hint">金額は円単位の整数。金額欄は 単価 × 数量 × 往復 から自動計算</span></h2>
-    <div class="card-body">
-      <h3 class="sub">移動ルート</h3>
-      <div class="tbl-wrap">
-        <table class="tbl" id="tbl-routes">
-          <thead><tr>
-            <th class="rownum">#</th>
-            <th style="width:88px">区分</th>
-            <th style="width:150px">出発地</th>
-            <th style="width:150px">到着地</th>
-            <th style="width:104px">手段</th>
-            <th style="width:84px">出発</th>
-            <th style="width:84px">到着</th>
-            <th style="width:86px">距離(km)</th>
-            <th style="width:70px">人数</th>
-            <th style="width:120px">備考</th>
-            <th class="rowdel"></th>
-          </tr></thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="tbl-foot">
-        <button type="button" class="btn-add" data-add="routes">＋ 行を追加</button>
-        <button type="button" class="btn-map" id="btn-map">地図で経路を見る</button>
-        <div class="sum-chips" id="chips-routes"></div>
-      </div>
-
-      <h3 class="sub">交通費</h3>
-      <div class="tbl-wrap">
-        <table class="tbl" id="tbl-fares">
-          <thead><tr>
-            <th class="rownum">#</th>
-            <th style="width:96px">種別</th>
-            <th>内容・区間</th>
-            <th style="width:112px">対象者</th>
-            <th style="width:92px">単価(円)</th>
-            <th style="width:70px">数量</th>
-            <th style="width:80px">往復</th>
-            <th style="width:104px">金額(円)</th>
-            <th style="width:130px">備考</th>
-            <th class="rowdel"></th>
-          </tr></thead>
-          <tbody></tbody>
-          <tfoot><tr class="total-row"><td colspan="10" id="fare-total"></td></tr></tfoot>
-        </table>
-      </div>
-      <div class="tbl-foot">
-        <button type="button" class="btn-add" data-add="fares">＋ 行を追加</button>
-        <div class="sum-chips" id="chips-fares"></div>
-      </div>
-    </div>
-  </section>
-
-  <section class="card">
     <h2>使用機械・車両</h2>
     <div class="card-body">
       <div class="tbl-wrap">
@@ -642,7 +584,7 @@ body.dirty .dirty-dot{display:block}
           <thead><tr>
             <th class="ck"><input type="checkbox" id="sv-all" aria-label="すべて選択"></th>
             <th>受信日時</th><th>送信元</th><th>作業日</th><th>工事番号</th><th>工事名</th>
-            <th class="num">人工</th><th class="num">残業h</th><th class="num">交通費</th><th>署名</th><th>取込</th>
+            <th class="num">人工</th><th class="num">残業h</th><th>署名</th><th>取込</th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -659,7 +601,6 @@ body.dirty .dirty-dot{display:block}
         <div class="f" style="max-width:170px"><label for="q-from">作業日 From</label><input type="date" id="q-from"></div>
         <div class="f" style="max-width:170px"><label for="q-to">To</label><input type="date" id="q-to"></div>
         <button class="btn" id="btn-csv-worker">人工集計CSV</button>
-        <button class="btn" id="btn-csv-fare">交通費明細CSV</button>
         <button class="btn" id="btn-csv-report">日報一覧CSV</button>
         <button class="btn" id="btn-export">バックアップ書出</button>
         <button class="btn" id="btn-import">取込</button>
@@ -669,7 +610,7 @@ body.dirty .dirty-dot{display:block}
         <table class="list" id="tbl-list">
           <thead><tr>
             <th>作業日</th><th>日報No</th><th>工事番号</th><th>工事名</th>
-            <th>元請</th><th class="num">人工</th><th class="num">残業h</th><th class="num">交通費</th><th>署名</th><th>送信</th><th></th>
+            <th>元請</th><th class="num">人工</th><th class="num">残業h</th><th>署名</th><th>送信</th><th></th>
           </tr></thead>
           <tbody></tbody>
         </table>
@@ -770,10 +711,6 @@ const LS_KEY = "construction-daily-report:v1";
 const WEATHERS = ["晴", "曇", "雨", "雪", "強風", "霧"];
 const WORK_TYPES = ["常用", "請負"];
 const MATERIAL_TYPES = ["搬入", "搬出", "使用"];
-const ROUTE_KINDS = ["往路", "復路", "現場間", "その他"];
-const MEANS = ["社用車", "自家用車", "電車", "バス", "タクシー", "徒歩", "その他"];
-const FARE_KINDS = ["電車", "バス", "タクシー", "高速道路", "駐車場", "燃料", "その他"];
-const TRIP_TYPES = ["片道", "往復"];
 const DEFAULT_SIGN_ROLES = ["作業責任者", "元請確認"];
 
 const $  = (sel, root) => (root || document).querySelector(sel);
@@ -886,6 +823,7 @@ function persist() {
 const CONN_KEY = "construction-daily-report:conn";
 let conn = { url: "", key: "", org: "", role: "" };
 let serverRows = [];
+let serverSuggests = { workers: [], fares: [] };  // サーバーから取得した業者別候補
 
 function loadConn() {
   if (!storageOK) return;
@@ -895,6 +833,21 @@ function loadConn() {
 function saveConn() {
   if (!storageOK) return;
   try { localStorage.setItem(CONN_KEY, JSON.stringify(conn)); } catch (e) { /* 容量超過は persist 側で通知 */ }
+}
+
+/** サーバーから業者毎の入力候補を取得 */
+async function fetchSuggests() {
+  if (!conn.url || !conn.key) return;  // URL・キーが未設定なら何もしない
+  try {
+    const data = await api("suggest");
+    if (data.ok && data.suggests) {
+      serverSuggests = data.suggests;
+      refreshDatalists();  // 候補を更新したら datalist も再生成
+    }
+  } catch (e) {
+    // サーバー取得失敗は静かに処理（オフライン時など）
+    console.warn("候補取得失敗: " + e.message);
+  }
 }
 
 /** GAS の Web アプリを叩く。事前確認リクエストを避けるため text/plain で送る */
@@ -1121,27 +1074,6 @@ const ROW_DEFS = {
     { key: "hours", label: "稼働時間",  type: "number", cls: "num", step: "0.5" },
     { key: "note",  label: "備考",      type: "text", wide: true },
   ],
-  routes: [
-    { key: "kind",   label: "区分",      type: "select", options: ROUTE_KINDS },
-    { key: "from",   label: "出発地",    type: "text", wide: true, list: "dl-place" },
-    { key: "to",     label: "到着地",    type: "text", wide: true, list: "dl-place" },
-    { key: "means",  label: "手段",      type: "select", options: MEANS },
-    { key: "depart", label: "出発",      type: "time" },
-    { key: "arrive", label: "到着",      type: "time" },
-    { key: "km",     label: "距離(km)",  type: "number", cls: "num", step: "0.1" },
-    { key: "people", label: "人数",      type: "number", cls: "num", step: "1" },
-    { key: "note",   label: "備考",      type: "text", wide: true },
-  ],
-  fares: [
-    { key: "kind",   label: "種別",       type: "select", options: FARE_KINDS },
-    { key: "detail", label: "内容・区間", type: "text", wide: true },
-    { key: "target", label: "対象者",     type: "text", list: "dl-worker" },
-    { key: "unit",   label: "単価(円)",   type: "number", cls: "num", step: "1" },
-    { key: "qty",    label: "数量",       type: "number", cls: "num", step: "1" },
-    { key: "trip",   label: "往復",       type: "select", options: TRIP_TYPES },
-    { key: "amount", label: "金額(円)",   type: "calc", cls: "num" },
-    { key: "note",   label: "備考",       type: "text", wide: true },
-  ],
   materials: [
     { key: "type",     label: "区分",           type: "select", options: MATERIAL_TYPES },
     { key: "name",     label: "品名",           type: "text" },
@@ -1258,31 +1190,6 @@ function applyOvertimeSuggestion() {
 /** 金額は円単位の整数。表示のときだけカンマを入れる */
 const yen = (n) => Math.round(n).toLocaleString("ja-JP");
 
-/** 交通費の金額 = 単価 × 数量 × 往復。数量が空なら 1 とみなす */
-function fareAmount(f) {
-  const unit = Math.round(num(f.unit));
-  const qty = String(f.qty || "").trim() === "" ? 1 : num(f.qty);
-  return Math.round(unit * qty * (f.trip === "往復" ? 2 : 1));
-}
-
-function travelSummary(routes, fares) {
-  const s = { km: 0, fare: 0 };
-  (routes || []).forEach((r) => { s.km += num(r.km); });
-  (fares || []).forEach((f) => { s.fare += fareAmount(f); });
-  return s;
-}
-
-/** 画面上の金額欄を計算し直す。DOM から読むので保存前でも合う */
-function refreshFareAmounts() {
-  $$("#tbl-fares tbody tr").forEach((tr) => {
-    const get = (k) => { const el = tr.querySelector(`[data-k="${k}"]`); return el ? el.value.trim() : ""; };
-    const out = tr.querySelector('[data-k="amount"]');
-    if (!out) return;
-    const a = fareAmount({ unit: get("unit"), qty: get("qty"), trip: get("trip") });
-    out.value = a ? yen(a) : "";
-  });
-}
-
 function ninkSummary(workers) {
   const s = { 常用: 0, 請負: 0, total: 0, ot: 0, count: 0 };
   (workers || []).forEach((w) => {
@@ -1306,15 +1213,6 @@ function recalc() {
     `<span class="chip">残業<b>${fmtNink(s.ot)}</b>h</span>`;
   $("#worker-total").textContent =
     `合計 ${s.count} 名 / ${fmtNink(s.total)} 人工（常用 ${fmtNink(s.常用)} ・ 請負 ${fmtNink(s.請負)}） / 残業 ${fmtNink(s.ot)} h`;
-
-  // 交通費の対象者は、その日の作業員から選べるようにする
-  setDatalist("dl-worker", readRows("workers").map((w) => w.name));
-
-  refreshFareAmounts();
-  const t = travelSummary(readRows("routes"), readRows("fares"));
-  $("#chips-routes").innerHTML = `<span class="chip">移動距離<b>${fmtNink(t.km)}</b>km</span>`;
-  $("#chips-fares").innerHTML = `<span class="chip">交通費<b>${yen(t.fare)}</b>円</span>`;
-  $("#fare-total").textContent = `交通費合計 ${yen(t.fare)} 円 / 移動距離 ${fmtNink(t.km)} km`;
 
   renderAlerts();
 }
@@ -1361,14 +1259,6 @@ function validate(r) {
   if (r.accident && r.accident !== "なし" && !r.accidentDetail)
     warns.push("災害・事故が「" + r.accident + "」ですが、発生内容が未記入です。");
   if (r.tasks.some((t) => num(t.progress) > 100)) warns.push("進捗率が 100% を超えている行があります。");
-  r.fares.forEach((f, i) => {
-    if (fareAmount(f) === 0 && f.detail)
-      warns.push(`交通費 ${i + 1} 行目（${f.detail}）の金額が 0 円です。単価の入力漏れの可能性があります。`);
-  });
-  r.routes.forEach((x, i) => {
-    if ((x.from && !x.to) || (!x.from && x.to))
-      warns.push(`移動ルート ${i + 1} 行目：出発地と到着地のどちらかが未入力です。`);
-  });
   const dup = reports.find((x) => x.id !== currentId && x.date === r.date && x.projectNo === r.projectNo);
   if (dup) warns.push(`同じ作業日・工事番号の日報が既に保存されています（日報No: ${dup.reportNo || "―"}）。`);
   return { errs, warns };
@@ -1396,8 +1286,8 @@ function collectForm() {
   r.workHours = $("#workHours").value;
   r.tasks     = readRows("tasks");
   r.workers   = readRows("workers");
-  r.routes    = readRows("routes");
-  r.fares     = readRows("fares");
+  r.routes    = [];
+  r.fares     = [];
   r.machines  = readRows("machines");
   r.materials = readRows("materials");
   r.signatures = signatures.map((s) => Object.assign({}, s));
@@ -1409,8 +1299,6 @@ function fillForm(r) {
   FIELDS.forEach((f) => { $("#" + f).value = r[f] == null ? "" : r[f]; });
   fillRows("tasks", r.tasks);
   fillRows("workers", r.workers);
-  fillRows("routes", r.routes);
-  fillRows("fares", r.fares);
   fillRows("machines", r.machines);
   fillRows("materials", r.materials);
   signatures = (r.signatures && r.signatures.length)
@@ -1432,8 +1320,6 @@ function newReport() {
     accident: "なし",
     workers: [{ type: "常用" }],
     tasks: [{ type: "常用" }],
-    routes: [{ kind: "往路" }, { kind: "復路" }],
-    fares: [{ qty: "1" }],
   });
   setDirty(false);
   showView("edit");
@@ -1661,7 +1547,6 @@ function renderList() {
   $("#tbl-list").style.display = rows.length ? "" : "none";
   rows.forEach((r) => {
     const s = ninkSummary(r.workers);
-    const tv = travelSummary(r.routes, r.fares);
     const signed = (r.signatures || []).filter((x) => x.dataUrl).length;
     const total = (r.signatures || []).length;
     const tr = document.createElement("tr");
@@ -1673,7 +1558,6 @@ function renderList() {
       <td>${esc(r.client)}</td>
       <td class="num">${fmtNink(s.total)}</td>
       <td class="num">${s.ot ? fmtNink(s.ot) : num(r.overtimeH) ? fmtNink(num(r.overtimeH)) : "―"}</td>
-      <td class="num">${tv.fare ? yen(tv.fare) : "―"}</td>
       <td><span class="badge ${signed && signed === total ? "ok" : "no"}">${signed}/${total}</span></td>
       <td>${r.srvOrg ? `<span class="badge ok">${esc(r.srvOrg)}</span>`
             : r.sentAt ? '<span class="badge ok">送信済</span>'
@@ -1752,6 +1636,16 @@ function setDatalist(id, vals) {
 }
 
 function refreshDatalists() {
+  // サーバーからの候補 + ローカル日報の候補を統合
+  const localWorkers = reports.flatMap((r) => (r.workers || []).map((w) => w.name));
+  const allWorkers = Array.from(new Set([...serverSuggests.workers, ...localWorkers])).filter(Boolean);
+  setDatalist("dl-worker", allWorkers);
+  
+  const localFares = reports.flatMap((r) => (r.fares || []).map((f) => f.detail));
+  const allFares = Array.from(new Set([...serverSuggests.fares, ...localFares])).filter(Boolean);
+  setDatalist("dl-fare-detail", allFares);
+  
+  // その他の候補（プロジェクト等は従来通りローカルのみ）
   setDatalist("dl-project", reports.map((r) => r.projectName));
   setDatalist("dl-client",  reports.map((r) => r.client));
   setDatalist("dl-org",     reports.flatMap((r) => (r.workers || []).map((w) => w.org)));
@@ -1793,37 +1687,18 @@ function exportWorkerCSV() {
   toast(`${rows.length - 1} 行を出力しました`);
 }
 
-function exportFareCSV() {
-  const rows = [["作業日", "日報No", "工事番号", "工事名", "元請/発注者",
-    "種別", "内容・区間", "対象者", "単価(円)", "数量", "往復", "金額(円)", "備考"]];
-  filteredReports().forEach((r) => {
-    (r.fares || []).forEach((f) => {
-      const amt = fareAmount(f);
-      if (!f.detail && !amt) return;
-      rows.push([r.date, r.reportNo, r.projectNo, r.projectName, r.client,
-        f.kind, f.detail, f.target, Math.round(num(f.unit)), f.qty, f.trip, amt, f.note]);
-    });
-  });
-  if (rows.length === 1) { toast("出力対象の交通費がありません"); return; }
-  download(`交通費明細_${todayISO()}.csv`, toCSV(rows), "text/csv;charset=utf-8");
-  toast(`${rows.length - 1} 行を出力しました`);
-}
-
 function exportReportCSV() {
   const rows = [["作業日", "日報No", "工事番号", "工事名", "元請/発注者", "現場所在地", "作業箇所",
     "天候(午前)", "天候(午後)", "開始", "終了", "休憩(分)", "実働", "所定終了", "残業時間(h)", "残業理由", "人数",
     "常用人工", "請負人工", "合計人工", "作業員残業計(h)",
-    "移動距離計(km)", "交通費計(円)",
     "作業内容", "災害・事故", "特記事項", "翌日予定", "署名済/欄数"]];
   filteredReports().forEach((r) => {
     const s = ninkSummary(r.workers);
-    const t = travelSummary(r.routes, r.fares);
     const sg = r.signatures || [];
     rows.push([r.date, r.reportNo, r.projectNo, r.projectName, r.client, r.site, r.area,
       r.weatherAm, r.weatherPm, r.workStart, r.workEnd, r.breakMin, r.workHours,
       r.schedEnd, r.overtimeH, r.overtimeReason, s.count,
       fmtNink(s.常用), fmtNink(s.請負), fmtNink(s.total), fmtNink(s.ot),
-      fmtNink(t.km), t.fare,
       (r.tasks || []).map((t) => t.content).filter(Boolean).join(" / "),
       r.accident + (r.accidentDetail ? "：" + r.accidentDetail : ""),
       r.remarks, r.nextPlan, `${sg.filter((x) => x.dataUrl).length}/${sg.length}`]);
@@ -1896,36 +1771,6 @@ function renderPrint(r) {
 
   const machines = (r.machines || []).filter((m) => m.name);
   const materials = (r.materials || []).filter((m) => m.name);
-  const routes = (r.routes || []).filter((x) => x.from || x.to || num(x.km));
-  const fares = (r.fares || []).filter((f) => f.detail || fareAmount(f));
-  const t = travelSummary(r.routes, r.fares);
-
-  const travelTbl = (routes.length || fares.length) ? `
-    <div class="p-sec">移動・交通費</div>
-    ${routes.length ? `
-    <table>
-      <colgroup><col style="width:44px"><col><col><col style="width:56px"><col style="width:15%"><col style="width:44px"><col style="width:36px"></colgroup>
-      <tr><th>区分</th><th>出発地</th><th>到着地</th><th>手段</th><th>時刻</th><th>km</th><th>人数</th></tr>
-      ${routes.map((x) => `<tr>
-        <td class="ctr">${cell(x.kind)}</td><td>${cell(x.from)}</td><td>${cell(x.to)}</td>
-        <td class="ctr">${cell(x.means)}</td>
-        <td class="ctr">${cell(x.depart)}${x.arrive ? "〜" + cell(x.arrive) : ""}</td>
-        <td class="num">${x.km ? cell(x.km) : ""}</td><td class="num">${cell(x.people)}</td></tr>`).join("")}
-      <tr><td colspan="5" style="text-align:right;font-weight:700">移動距離計</td>
-          <td class="num" style="font-weight:700">${fmtNink(t.km)}</td><td></td></tr>
-    </table>` : ""}
-    ${fares.length ? `
-    <table>
-      <colgroup><col style="width:56px"><col><col style="width:16%"><col style="width:60px"><col style="width:36px"><col style="width:40px"><col style="width:70px"></colgroup>
-      <tr><th>種別</th><th>内容・区間</th><th>対象者</th><th>単価</th><th>数</th><th>往復</th><th>金額</th></tr>
-      ${fares.map((f) => `<tr>
-        <td class="ctr">${cell(f.kind)}</td><td>${cell(f.detail)}</td><td>${cell(f.target)}</td>
-        <td class="num">${f.unit ? yen(num(f.unit)) : ""}</td><td class="num">${cell(f.qty)}</td>
-        <td class="ctr">${cell(f.trip)}</td><td class="num">${yen(fareAmount(f))}</td></tr>`).join("")}
-      <tr><td colspan="6" style="text-align:right;font-weight:700">交通費計</td>
-          <td class="num" style="font-weight:700">${yen(t.fare)}</td></tr>
-    </table>` : ""}` : "";
-
   const machineTbl = machines.length ? `
     <div class="p-sec">使用機械・車両</div>
     <table>
@@ -1984,7 +1829,6 @@ function renderPrint(r) {
           <td class="num" style="font-weight:700">${s.ot ? fmtNink(s.ot) : ""}</td><td></td></tr>
     </table>
 
-    ${travelTbl}
     ${machineTbl}
     ${materialTbl}
 
@@ -2054,7 +1898,13 @@ function init() {
   $("#storage-warn").hidden = storageOK;
   $("#server-role").textContent = connLabel();
   renderServerList();
-  refreshDatalists();
+  
+  // 初期化完了後、サーバーから業者毎の候補を取得。失敗時はローカルのみ
+  (async () => {
+    await fetchSuggests();
+    // fetchSuggests で refreshDatalists が呼ばれる（失敗時は下記で呼ぶ）
+  })().catch(() => refreshDatalists());  // ネットワークエラー時はローカル候補のみ
+  
   updateCount();
   padInit();
 
@@ -2111,7 +1961,6 @@ function init() {
     $$("#tbl-server tbody input[type=checkbox]").forEach((c) => { c.checked = e.target.checked; });
     updateImportBtn();
   });
-  $("#btn-map").addEventListener("click", openRouteMap);
   $("#btn-add-sign").addEventListener("click", () => {
     signatures.push({ role: "確認者", name: "", company: "", dataUrl: "", signedAt: "" });
     renderSignatures(); setDirty(true);
@@ -2120,7 +1969,6 @@ function init() {
   // 一覧
   ["#q-keyword", "#q-from", "#q-to"].forEach((s) => $(s).addEventListener("input", renderList));
   $("#btn-csv-worker").addEventListener("click", exportWorkerCSV);
-  $("#btn-csv-fare").addEventListener("click", exportFareCSV);
   $("#btn-csv-report").addEventListener("click", exportReportCSV);
   $("#btn-export").addEventListener("click", exportJSON);
   $("#btn-import").addEventListener("click", () => $("#file-import").click());
