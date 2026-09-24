@@ -462,7 +462,6 @@ body.dirty .dirty-dot{display:block}
           <thead><tr>
             <th class="rownum">#</th>
             <th style="width:120px">氏名</th>
-            <th style="width:130px">所属会社</th>
             <th style="width:96px">職種</th>
             <th style="width:92px">区分</th>
             <th style="width:84px">出勤</th>
@@ -473,7 +472,7 @@ body.dirty .dirty-dot{display:block}
             <th class="rowdel"></th>
           </tr></thead>
           <tbody></tbody>
-          <tfoot><tr class="total-row"><td colspan="11" id="worker-total"></td></tr></tfoot>
+          <tfoot><tr class="total-row"><td colspan="10" id="worker-total"></td></tr></tfoot>
         </table>
       </div>
       <div class="tbl-foot">
@@ -1058,7 +1057,6 @@ const ROW_DEFS = {
   ],
   workers: [
     { key: "name",   label: "氏名",     type: "text" },
-    { key: "org",    label: "所属会社", type: "text", list: "dl-org" },
     { key: "role",   label: "職種",     type: "text", list: "dl-role" },
     { key: "type",   label: "区分",     type: "select", options: WORK_TYPES },
     { key: "start",  label: "出勤",     type: "time" },
@@ -1648,7 +1646,6 @@ function refreshDatalists() {
   // その他の候補（プロジェクト等は従来通りローカルのみ）
   setDatalist("dl-project", reports.map((r) => r.projectName));
   setDatalist("dl-client",  reports.map((r) => r.client));
-  setDatalist("dl-org",     reports.flatMap((r) => (r.workers || []).map((w) => w.org)));
   setDatalist("dl-role",    reports.flatMap((r) => (r.workers || []).map((w) => w.role)));
   setDatalist("dl-place",   reports.flatMap((r) => (r.routes || []).flatMap((x) => [x.from, x.to])));
 }
@@ -1672,13 +1669,13 @@ const csvCell = (v) => {
 const toCSV = (rows) => "﻿" + rows.map((r) => r.map(csvCell).join(",")).join("\r\n");
 
 function exportWorkerCSV() {
-  const rows = [["作業日", "日報No", "工事番号", "工事名", "元請/発注者", "氏名", "所属会社", "職種", "区分",
+  const rows = [["作業日", "日報No", "工事番号", "工事名", "元請/発注者", "氏名", "職種", "区分",
     "出勤", "退勤", "人工", "残業(h)", "残業理由", "備考"]];
   filteredReports().forEach((r) => {
     (r.workers || []).forEach((w) => {
       if (!w.name && !num(w.nink) && !num(w.ot)) return;
       rows.push([r.date, r.reportNo, r.projectNo, r.projectName, r.client,
-        w.name, w.org, w.role, w.type || "常用", w.start, w.end,
+        w.name, w.role, w.type || "常用", w.start, w.end,
         fmtNink(num(w.nink)), fmtNink(num(w.ot)), r.overtimeReason, w.note]);
     });
   });
@@ -1762,7 +1759,7 @@ function renderPrint(r) {
 
   const workers = rowsOr((r.workers || []).filter((w) => w.name || num(w.nink) || num(w.ot)), 5).map((w, i) => `
     <tr>
-      <td class="ctr">${i + 1}</td><td>${cell(w.name)}</td><td>${cell(w.org)}</td>
+      <td class="ctr">${i + 1}</td><td>${cell(w.name)}</td>
       <td class="ctr">${cell(w.role)}</td><td class="ctr">${cell(w.name ? (w.type || "常用") : "")}</td>
       <td class="ctr">${cell(w.start)}${w.end ? "〜" + cell(w.end) : ""}</td>
       <td class="num">${w.nink ? fmtNink(num(w.nink)) : ""}</td>
@@ -1821,10 +1818,10 @@ function renderPrint(r) {
 
     <div class="p-sec">作業員</div>
     <table>
-      <colgroup><col style="width:22px"><col style="width:16%"><col style="width:18%"><col style="width:10%"><col style="width:40px"><col style="width:14%"><col style="width:38px"><col style="width:42px"><col></colgroup>
-      <tr><th>#</th><th>氏名</th><th>所属会社</th><th>職種</th><th>区分</th><th>時間</th><th>人工</th><th>残業h</th><th>備考</th></tr>
+      <colgroup><col style="width:22px"><col style="width:20%"><col style="width:14%"><col style="width:40px"><col style="width:16%"><col style="width:42px"><col style="width:48px"><col></colgroup>
+      <tr><th>#</th><th>氏名</th><th>職種</th><th>区分</th><th>時間</th><th>人工</th><th>残業h</th><th>備考</th></tr>
       ${workers}
-      <tr><td colspan="6" style="text-align:right;font-weight:700">合計</td>
+      <tr><td colspan="5" style="text-align:right;font-weight:700">合計</td>
           <td class="num" style="font-weight:700">${fmtNink(s.total)}</td>
           <td class="num" style="font-weight:700">${s.ot ? fmtNink(s.ot) : ""}</td><td></td></tr>
     </table>
