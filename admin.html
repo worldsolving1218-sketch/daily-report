@@ -973,6 +973,9 @@ async function importFromServer() {
   btn.textContent = "取り込み中…";
   try {
     const res = await api("fetch", { keys: keys });
+    if (!Array.isArray(res.reports) || res.reports.length !== keys.length) {
+      throw new Error(`選択した日報は ${keys.length} 件ですが、サーバーから ${Array.isArray(res.reports) ? res.reports.length : 0} 件しか取得できませんでした。GAS のデプロイが最新か、受信シートの「本文JSON」列にデータがあるか確認してください。`);
+    }
     let added = 0, updated = 0;
     (res.reports || []).forEach((b) => {
       const rec = Object.assign({}, b);
